@@ -71,9 +71,9 @@ function App() {
   };
 
   const handleDeleteAll = async () => {
-    const confirmPhrase = prompt(⚠️ هل أنت متأكد؟ اكتب: 'أوافق على حذف كل الطلبات'");
+    const confirmPhrase = prompt("⚠️ Are you sure? Type: 'أوافق على حذف كل الطلبات'");
     if (confirmPhrase !== 'أوافق على حذف كل الطلبات') {
-      alert("تم الإلغاء. لم يتم حذف أي شيء.");
+      alert('تم الإلغاء. لم يتم حذف أي شيء.');
       return;
     }
 
