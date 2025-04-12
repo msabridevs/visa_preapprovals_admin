@@ -33,6 +33,13 @@ function App() {
   const handleBarcode = async () => {
     const codes = barcode.split(/[-_,]/).map(c => c.trim()).filter(Boolean);
 
+    // Validate barcode: numeric and max 4 digits
+    const invalid = codes.find(code => code.length > 4 || !/^\d+$/.test(code));
+    if (invalid) {
+      alert(`الرقم ${invalid} غير صحيح. يجب أن لا يزيد عن 4 أرقام.`);
+      return;
+    }
+
     for (const code of codes) {
       const { data } = await supabase.from('visa_requests').select().eq('barcode', code).maybeSingle();
 
@@ -78,8 +85,18 @@ function App() {
   return (
     <div style={{ maxWidth: 600, margin: '50px auto' }}>
       <h2>Visa Tracker</h2>
-      <textarea rows="3" placeholder="أدخل الباركود" value={barcode} onChange={e => setBarcode(e.target.value)} /><br />
-      <input type="text" placeholder="ملاحظات" value={notes} onChange={e => setNotes(e.target.value)} /><br />
+      <textarea
+        rows="3"
+        placeholder="أدخل الباركود (رقم أو أرقام مفصولة بفواصل - أو _)"
+        value={barcode}
+        onChange={e => setBarcode(e.target.value)}
+      /><br />
+      <input
+        type="text"
+        placeholder="ملاحظات"
+        value={notes}
+        onChange={e => setNotes(e.target.value)}
+      /><br />
       <button onClick={handleBarcode}>Submit</button>
       <button onClick={logout}>Logout</button>
     </div>
