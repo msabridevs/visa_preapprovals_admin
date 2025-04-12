@@ -71,6 +71,42 @@ function App() {
     setNotes('');
   };
 
+  const handleDeleteRows = async () => {
+    const option = prompt(
+      "هل تريد حذف:\n1. كل الطلبات\n2. أقدم 10 فقط\n\nأدخل الرقم 1 أو 2"
+    );
+
+    if (option !== '1' && option !== '2') {
+      alert("تم الإلغاء.");
+      return;
+    }
+
+    const confirmPhrase = prompt("⚠️ للتحقق، اكتب: 'أوافق على الحذف'");
+    if (confirmPhrase !== 'أوافق على الحذف') {
+      alert("تم الإلغاء. لم يتم حذف أي شيء.");
+      return;
+    }
+
+    if (option === '1') {
+      const { error } = await supabase.from('visa_requests').delete().neq('id', '');
+      if (!error) alert("✔️ تم حذف كل الطلبات.");
+    } else if (option === '2') {
+      const { data } = await supabase
+        .from('visa_requests')
+        .select('id')
+        .order('timestamp', { ascending: true })
+        .limit(10);
+
+      const ids = data.map(row => row.id);
+      if (ids.length > 0) {
+        const { error } = await supabase.from('visa_requests').delete().in('id', ids);
+        if (!error) alert("✔️ تم حذف أقدم 10 طلبات.");
+      } else {
+        alert("لا توجد طلبات لحذفها.");
+      }
+    }
+  };
+
   if (!session) {
     return (
       <div style={{ maxWidth: 400, margin: '100px auto' }}>
@@ -99,6 +135,10 @@ function App() {
       /><br />
       <button onClick={handleBarcode}>Submit</button>
       <button onClick={logout}>Logout</button>
+      <br /><br />
+      <button onClick={handleDeleteRows} style={{ color: 'red' }}>
+        🗑 حذف الطلبات
+      </button>
     </div>
   );
 }
