@@ -77,7 +77,6 @@ function App() {
       return;
     }
 
-    // Fetch all uuids
     const { data: rows, error: fetchError } = await supabase.from('visa_requests').select('uuid');
     if (fetchError || !rows) {
       alert('حدث خطأ أثناء محاولة الحذف.');
