@@ -33,7 +33,6 @@ function App() {
   const handleBarcode = async () => {
     const codes = barcode.split(/[-_,]/).map(c => c.trim()).filter(Boolean);
 
-    // Validate barcode: numeric and max 4 digits
     const invalid = codes.find(code => code.length > 4 || !/^\d+$/.test(code));
     if (invalid) {
       alert(`الرقم ${invalid} غير صحيح. يجب أن لا يزيد عن 4 أرقام.`);
@@ -71,39 +70,31 @@ function App() {
     setNotes('');
   };
 
-  const handleDeleteRows = async () => {
-    const option = prompt(
-      "هل تريد حذف:\n1. كل الطلبات\n2. أقدم 10 فقط\n\nأدخل الرقم 1 أو 2"
-    );
-
-    if (option !== '1' && option !== '2') {
-      alert("تم الإلغاء.");
-      return;
-    }
-
-    const confirmPhrase = prompt("⚠️ للتحقق، اكتب: 'أوافق على الحذف'");
-    if (confirmPhrase !== 'أوافق على الحذف') {
+  const handleDeleteAll = async () => {
+    const confirmPhrase = prompt("⚠️ هل أنت متأكد؟ اكتب: 'أوافق على حذف كل الطلبات'");
+    if (confirmPhrase !== 'أوافق على حذف كل الطلبات') {
       alert("تم الإلغاء. لم يتم حذف أي شيء.");
       return;
     }
 
-    if (option === '1') {
-      const { error } = await supabase.from('visa_requests').delete().neq('id', '');
-      if (!error) alert("✔️ تم حذف كل الطلبات.");
-    } else if (option === '2') {
-      const { data } = await supabase
-        .from('visa_requests')
-        .select('id')
-        .order('timestamp', { ascending: true })
-        .limit(10);
+    // First, fetch all IDs from the table
+    const { data: rows, error: fetchError } = await supabase.from('visa_requests').select('id');
+    if (fetchError || !rows) {
+      alert('حدث خطأ أثناء محاولة الحذف.');
+      return;
+    }
 
-      const ids = data.map(row => row.id);
-      if (ids.length > 0) {
-        const { error } = await supabase.from('visa_requests').delete().in('id', ids);
-        if (!error) alert("✔️ تم حذف أقدم 10 طلبات.");
-      } else {
-        alert("لا توجد طلبات لحذفها.");
-      }
+    if (rows.length === 0) {
+      alert('لا توجد طلبات لحذفها.');
+      return;
+    }
+
+    const ids = rows.map(row => row.id);
+    const { error: deleteError } = await supabase.from('visa_requests').delete().in('id', ids);
+    if (deleteError) {
+      alert('حدث خطأ أثناء حذف الطلبات.');
+    } else {
+      alert('✅ تم حذف جميع الطلبات بنجاح.');
     }
   };
 
@@ -136,8 +127,8 @@ function App() {
       <button onClick={handleBarcode}>Submit</button>
       <button onClick={logout}>Logout</button>
       <br /><br />
-      <button onClick={handleDeleteRows} style={{ color: 'red' }}>
-        🗑 حذف الطلبات
+      <button onClick={handleDeleteAll} style={{ color: 'red', fontWeight: 'bold' }}>
+        🗑 حذف جميع الطلبات
       </button>
     </div>
   );
