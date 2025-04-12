@@ -71,14 +71,14 @@ function App() {
   };
 
   const handleDeleteAll = async () => {
-    const confirmPhrase = prompt("⚠️ هل أنت متأكد؟ اكتب: 'أوافق على حذف كل الطلبات'");
+    const confirmPhrase = prompt(⚠️ هل أنت متأكد؟ اكتب: 'أوافق على حذف كل الطلبات'");
     if (confirmPhrase !== 'أوافق على حذف كل الطلبات') {
       alert("تم الإلغاء. لم يتم حذف أي شيء.");
       return;
     }
 
-    // First, fetch all IDs from the table
-    const { data: rows, error: fetchError } = await supabase.from('visa_requests').select('id');
+    // Fetch all uuids
+    const { data: rows, error: fetchError } = await supabase.from('visa_requests').select('uuid');
     if (fetchError || !rows) {
       alert('حدث خطأ أثناء محاولة الحذف.');
       return;
@@ -89,8 +89,8 @@ function App() {
       return;
     }
 
-    const ids = rows.map(row => row.id);
-    const { error: deleteError } = await supabase.from('visa_requests').delete().in('id', ids);
+    const uuids = rows.map(row => row.uuid);
+    const { error: deleteError } = await supabase.from('visa_requests').delete().in('uuid', uuids);
     if (deleteError) {
       alert('حدث خطأ أثناء حذف الطلبات.');
     } else {
