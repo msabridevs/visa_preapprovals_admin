@@ -35,8 +35,7 @@ function App() {
   const handleBarcode = async () => {
     const codes = barcode.split(/[-_,]/).map(c => c.trim()).filter(Boolean);
 
-    const invalid = codes.find(code => code.length > 4 || !/^
-\d+$/.test(code));
+    const invalid = codes.find(code => code.length > 4 || !/^\d+$/.test(code));
     if (invalid) {
       alert(`الرقم ${invalid} غير صحيح. يجب أن لا يزيد عن 4 أرقام.`);
       return;
