@@ -150,6 +150,7 @@ function App() {
         </option>
         <option value="عدم موافقة">2. عدم موافقة</option>
         <option value="مطلوب إستيفاء بيانات">3. إستيفاء بيانات</option>
+        <option value="الطلب قيد الفحص. رجاء التحقق لاحقاً">4. قيد الفحص</option>
       </select><br />
       <button onClick={handleBarcode}>Submit</button>
       <button onClick={logout}>Logout</button>
