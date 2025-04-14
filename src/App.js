@@ -7,6 +7,8 @@ function App() {
   const [password, setPassword] = useState('');
   const [barcode, setBarcode] = useState('');
   const [notes, setNotes] = useState('');
+  const [statusChoice, setStatusChoice] = useState('');
+  const [deleteBarcode, setDeleteBarcode] = useState('');
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -33,7 +35,8 @@ function App() {
   const handleBarcode = async () => {
     const codes = barcode.split(/[-_,]/).map(c => c.trim()).filter(Boolean);
 
-    const invalid = codes.find(code => code.length > 4 || !/^\d+$/.test(code));
+    const invalid = codes.find(code => code.length > 4 || !/^
+\d+$/.test(code));
     if (invalid) {
       alert(`الرقم ${invalid} غير صحيح. يجب أن لا يزيد عن 4 أرقام.`);
       return;
@@ -49,14 +52,11 @@ function App() {
           notes,
         });
       } else if (data.status === 'الطلب قيد الفحص. رجاء التحقق لاحقاً') {
-        const choice = prompt(`Update status for ${code}:\n1. موافقة\n2. عدم موافقة\n3. إستيفاء بيانات`, '1');
-        let newStatus = '';
-        if (choice === '1') newStatus = 'وردت الموافقة. رجاء إحضار جواز السفر والأوراق المطلوبة خلال المواعيد المحددة أو الإرسال بالبريد المسجل مع مظروف إعادة مستوفى الطوابع والعنوان';
-        else if (choice === '2') newStatus = 'عدم موافقة';
-        else if (choice === '3') newStatus = 'مطلوب إستيفاء بيانات';
-        if (newStatus) {
-          await supabase.from('visa_requests').update({ status: newStatus, notes }).eq('barcode', code);
+        if (!statusChoice) {
+          alert('يرجى اختيار حالة من القائمة.');
+          return;
         }
+        await supabase.from('visa_requests').update({ status: statusChoice, notes }).eq('barcode', code);
       } else {
         const confirm = window.confirm(`هل تريد حذف ${code}؟`);
         if (confirm) {
@@ -68,6 +68,21 @@ function App() {
     alert('تم اللازم');
     setBarcode('');
     setNotes('');
+    setStatusChoice('');
+  };
+
+  const handleDeleteSpecific = async () => {
+    if (!deleteBarcode.trim()) {
+      alert('يرجى إدخال رقم الطلب المراد حذفه');
+      return;
+    }
+    const confirm = window.confirm(`هل أنت متأكد من حذف الطلب رقم ${deleteBarcode}؟`);
+    if (confirm) {
+      const { error } = await supabase.from('visa_requests').delete().eq('barcode', deleteBarcode.trim());
+      if (error) alert('حدث خطأ أثناء الحذف.');
+      else alert('تم حذف الطلب بنجاح');
+      setDeleteBarcode('');
+    }
   };
 
   const handleDeleteAll = async () => {
@@ -99,7 +114,7 @@ function App() {
 
   if (!session) {
     return (
-      <div style={{ maxWidth: 400, margin: '100px auto' }}>
+      <div style={{ maxWidth: 400, margin: '100px auto', fontSize: '20px' }}>
         <h2>Login</h2>
         <input type="email" placeholder="Email" onChange={e => setEmail(e.target.value)} /><br />
         <input type="password" placeholder="Password" onChange={e => setPassword(e.target.value)} /><br />
@@ -109,22 +124,47 @@ function App() {
   }
 
   return (
-    <div style={{ maxWidth: 600, margin: '50px auto' }}>
+    <div style={{ maxWidth: 800, margin: '50px auto', fontSize: '22px', lineHeight: '2' }}>
       <h2>Visa Tracker</h2>
       <textarea
         rows="3"
         placeholder="أدخل الباركود (رقم أو أرقام مفصولة بفواصل - أو _)"
         value={barcode}
         onChange={e => setBarcode(e.target.value)}
+        style={{ width: '100%', fontSize: '20px' }}
       /><br />
       <input
         type="text"
         placeholder="ملاحظات"
         value={notes}
         onChange={e => setNotes(e.target.value)}
+        style={{ width: '100%', fontSize: '20px' }}
       /><br />
+      <select
+        value={statusChoice}
+        onChange={e => setStatusChoice(e.target.value)}
+        style={{ width: '100%', fontSize: '20px' }}
+      >
+        <option value="">-- اختر الحالة --</option>
+        <option value="وردت الموافقة. رجاء إحضار جواز السفر والأوراق المطلوبة خلال المواعيد المحددة أو الإرسال بالبريد المسجل مع مظروف إعادة مستوفى الطوابع والعنوان">
+          1. موافقة
+        </option>
+        <option value="عدم موافقة">2. عدم موافقة</option>
+        <option value="مطلوب إستيفاء بيانات">3. إستيفاء بيانات</option>
+      </select><br />
       <button onClick={handleBarcode}>Submit</button>
       <button onClick={logout}>Logout</button>
+      <br /><br />
+      <input
+        type="text"
+        placeholder="أدخل رقم الطلب لحذفه"
+        value={deleteBarcode}
+        onChange={e => setDeleteBarcode(e.target.value)}
+        style={{ width: '100%', fontSize: '20px' }}
+      /><br />
+      <button onClick={handleDeleteSpecific} style={{ color: 'red', fontWeight: 'bold' }}>
+        🗑 حذف الطلب المحدد
+      </button>
       <br /><br />
       <button onClick={handleDeleteAll} style={{ color: 'red', fontWeight: 'bold' }}>
         🗑 حذف جميع الطلبات
