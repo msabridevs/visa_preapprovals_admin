@@ -46,10 +46,10 @@ function App() {
       if (!data) {
         await supabase.from('visa_requests').insert({
           barcode: code,
-          status: 'الطلب قيد الفحص. رجاء التحقق لاحقاً',
+          status: 'جارى مراجعة الطلب. رجاء التحقق لاحقاً',
           notes,
         });
-      } else if (data.status === 'الطلب قيد الفحص. رجاء التحقق لاحقاً') {
+      } else if (data.status === 'جارى مراجعة الطلب. رجاء التحقق لاحقاً') {
         if (!statusChoice) {
           alert('يرجى اختيار حالة من القائمة.');
           return;
@@ -103,9 +103,9 @@ function App() {
         <option value="وردت الموافقة. رجاء إحضار جواز السفر والأوراق المطلوبة خلال المواعيد المحددة أو الإرسال بالبريد المسجل مع مظروف إعادة مستوفى الطوابع والعنوان">
           1. موافقة
         </option>
-        <option value="عدم موافقة">2. عدم موافقة</option>
-        <option value="مطلوب إستيفاء بيانات">3. إستيفاء بيانات</option>
-        <option value="الطلب قيد الفحص. رجاء التحقق لاحقاً">4. قيد الفحص</option>
+        <option value="لم ترد الموافقة">2. لم ترد الموافقة</option>
+        <option value="مطلوب إستيفاء">3. مطلوب إستيفاء</option>
+        <option value="جارى مراجعة الطلب. رجاء التحقق لاحقاً">4. جارى مراجعة الطلب</option>
       </select><br />
       <button onClick={handleBarcode}>Submit</button>
       <button onClick={logout}>Logout</button>
