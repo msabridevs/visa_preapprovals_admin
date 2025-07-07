@@ -11,6 +11,7 @@ function App() {
   const [editMode, setEditMode] = useState(false);
   const [searchBarcode, setSearchBarcode] = useState('');
   const [editData, setEditData] = useState(null);
+  const [submissionResult, setSubmissionResult] = useState('');
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -43,6 +44,7 @@ function App() {
       return;
     }
 
+    let resultMsgs = [];
     for (const code of codes) {
       const { data } = await supabase.from('visa_requests').select().eq('barcode', code).maybeSingle();
 
@@ -52,18 +54,20 @@ function App() {
           status: 'جارى مراجعة الطلب. رجاء التحقق لاحقاً',
           notes,
         });
+        resultMsgs.push(`تم إضافة باركود ${code} بالحالة: جارى مراجعة الطلب.`);
       } else if (data.status === 'جارى مراجعة الطلب. رجاء التحقق لاحقاً') {
         if (!statusChoice) {
           alert('يرجى اختيار حالة من القائمة.');
           return;
         }
         await supabase.from('visa_requests').update({ status: statusChoice, notes }).eq('barcode', code);
+        resultMsgs.push(`تم تحديث باركود ${code} إلى الحالة: ${statusChoice}`);
       } else {
-        alert(`تمت معالجة الباركود رقم ${code} مسبقاً.`);
+        resultMsgs.push(`تمت معالجة الباركود رقم ${code} مسبقاً (الحالة الحالية: ${data.status}).`);
       }
     }
 
-    alert('تم اللازم');
+    setSubmissionResult(resultMsgs.join('\n'));
     setBarcode('');
     setNotes('');
     setStatusChoice('');
@@ -96,7 +100,7 @@ function App() {
       .update({ status: statusChoice, notes })
       .eq('barcode', editData.barcode);
 
-    alert('تم تحديث الحالة بنجاح');
+    setSubmissionResult(`تم تحديث باركود ${editData.barcode} إلى الحالة: ${statusChoice}`);
     setEditMode(false);
     setEditData(null);
     setSearchBarcode('');
@@ -163,6 +167,12 @@ function App() {
   return (
     <div style={{ maxWidth: 800, margin: '50px auto', fontSize: '22px', lineHeight: '2' }}>
       <h2>Visa Tracker</h2>
+      {submissionResult && (
+        <div style={{ background: '#f0f0f0', border: '1px solid #aaa', marginBottom: 20, padding: 10, whiteSpace: 'pre-line', borderRadius: 6 }}>
+          {submissionResult}
+          <button style={{ float: 'left', fontSize: 18 }} onClick={() => setSubmissionResult('')}>X</button>
+        </div>
+      )}
       <textarea
         rows="3"
         placeholder="أدخل الباركود (رقم أو أرقام مفصولة بفواصل - أو _)"
