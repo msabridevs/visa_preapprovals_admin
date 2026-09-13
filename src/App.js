@@ -1,378 +1,1042 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase';
 
-const MAIN_COLOR = "#0A5DAB";
-const SECONDARY_COLOR = "#F2F7FB";
-const DANGER_COLOR = "#D7263D";
-const SUCCESS_COLOR = "#26A65B";
-const BORDER_RADIUS = "12px";
-const FONT_FAMILY = "'Cairo', 'Tajawal', 'Segoe UI', 'Arial', sans-serif";
-const FONT_SIZE = "22px";
+const STATUS = {
+  REVIEW: 'جارى مراجعة الطلب. رجاء التحقق لاحقاً',
+  APPROVED:
+    'وردت الموافقة. رجاء إحضار جواز السفر والأوراق المطلوبة خلال المواعيد المحددة أو الإرسال بالبريد المسجل مع مظروف إعادة مستوفى الطوابع والعنوان',
+  NOT_APPROVED: 'لم ترد الموافقة',
+  REQUIRED: 'مطلوب إستيفاء',
+};
 
-function App() {
-  const [session, setSession] = useState(null);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [barcode, setBarcode] = useState('');
-  const [notes, setNotes] = useState('');
-  const [statusChoice, setStatusChoice] = useState('');
-  const [editMode, setEditMode] = useState(false);
-  const [searchBarcode, setSearchBarcode] = useState('');
-  const [editData, setEditData] = useState(null);
-  const [submissionResult, setSubmissionResult] = useState('');
+function isApproved(status) {
+  return (status || '').trim().startsWith('وردت الموافقة');
+}
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-    });
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => listener?.subscription.unsubscribe();
-  }, []);
-
-  const login = async () => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) alert('Login failed');
-  };
-
-  const logout = async () => {
-    await supabase.auth.signOut();
-    setSession(null);
-  };
-
-  const handleBarcode = async () => {
-    const codes = barcode.split(/[-_,]/).map(c => c.trim()).filter(Boolean);
-
-    const invalid = codes.find(code => code.length > 4 || !/^\d+$/.test(code));
-    if (invalid) {
-      alert(`الرقم ${invalid} غير صحيح. يجب أن لا يزيد عن 4 أرقام.`);
-      return;
-    }
-
-    let resultMsgs = [];
-    for (const code of codes) {
-      const { data } = await supabase.from('visa_requests').select().eq('barcode', code).maybeSingle();
-
-      if (!data) {
-        await supabase.from('visa_requests').insert({
-          barcode: code,
-          status: 'جارى مراجعة الطلب. رجاء التحقق لاحقاً',
-          notes,
-        });
-        resultMsgs.push(`✅ تم إضافة باركود ${code} بالحالة: جارى مراجعة الطلب.`);
-      } else if (data.status === 'جارى مراجعة الطلب. رجاء التحقق لاحقاً') {
-        if (!statusChoice) {
-          alert('يرجى اختيار حالة من القائمة.');
-          return;
-        }
-        await supabase.from('visa_requests').update({ status: statusChoice, notes }).eq('barcode', code);
-        resultMsgs.push(`🔄 تم تحديث باركود ${code} إلى الحالة: ${statusChoice}`);
-      } else {
-        resultMsgs.push(`⚠️ تمت معالجة الباركود رقم ${code} مسبقاً (الحالة الحالية: ${data.status}).`);
-      }
-    }
-
-    setSubmissionResult(resultMsgs.join('\n'));
-    setBarcode('');
-    setNotes('');
-    setStatusChoice('');
-  };
-
-  // --- Edit Status Logic ---
-  const handleSearchForEdit = async () => {
-    setEditData(null);
-    if (!searchBarcode.trim()) {
-      alert("يرجى إدخال رقم الباركود للبحث.");
-      return;
-    }
-    const { data } = await supabase.from('visa_requests').select().eq('barcode', searchBarcode.trim()).maybeSingle();
-    if (!data) {
-      alert("لم يتم العثور على هذا الباركود.");
-    } else {
-      setEditData(data);
-    }
-  };
-
-  const handleEditSubmit = async () => {
-    if (!editData) return;
-    if (!editData.status || !editData.barcode) return;
-    if (!statusChoice) {
-      alert('يرجى اختيار حالة من القائمة.');
-      return;
-    }
-    await supabase
-      .from('visa_requests')
-      .update({ status: statusChoice, notes })
-      .eq('barcode', editData.barcode);
-
-    setSubmissionResult(`🔄 تم تحديث باركود ${editData.barcode} إلى الحالة: ${statusChoice}`);
-    setEditMode(false);
-    setEditData(null);
-    setSearchBarcode('');
-    setNotes('');
-    setStatusChoice('');
-  };
-
-  // --- UI Styles ---
-  const styles = {
-    container: {
-      maxWidth: 560,
-      margin: '40px auto',
-      background: SECONDARY_COLOR,
-      borderRadius: BORDER_RADIUS,
-      boxShadow: "0 2px 16px #0001",
-      padding: 32,
-      fontFamily: FONT_FAMILY,
-      fontSize: FONT_SIZE,
-      color: "#1D1D1D",
-      direction: "rtl",
-    },
-    h2: {
-      color: MAIN_COLOR,
-      fontWeight: 900,
-      textAlign: "center",
-      marginBottom: 28,
-      letterSpacing: 1,
-    },
-    input: {
-      width: "100%",
-      fontSize: FONT_SIZE,
-      fontFamily: FONT_FAMILY,
-      padding: "14px",
-      margin: "8px 0 18px",
-      borderRadius: BORDER_RADIUS,
-      border: "1px solid #b6bdd2",
-      background: "#fff",
-      outline: "none",
-      boxSizing: "border-box",
-      transition: "border-color 0.2s",
-    },
-    textarea: {
-      width: "100%",
-      fontSize: FONT_SIZE,
-      fontFamily: FONT_FAMILY,
-      padding: "14px",
-      borderRadius: BORDER_RADIUS,
-      border: "1px solid #b6bdd2",
-      background: "#fff",
-      margin: "8px 0 18px",
-      outline: "none",
-      boxSizing: "border-box",
-      transition: "border-color 0.2s",
-      resize: "vertical",
-    },
-    select: {
-      width: "100%",
-      fontSize: FONT_SIZE,
-      fontFamily: FONT_FAMILY,
-      padding: "14px",
-      borderRadius: BORDER_RADIUS,
-      border: "1px solid #b6bdd2",
-      background: "#fff",
-      margin: "8px 0 18px",
-      outline: "none",
-      boxSizing: "border-box",
-      transition: "border-color 0.2s",
-    },
-    button: {
-      background: MAIN_COLOR,
-      color: "#fff",
-      fontSize: "23px",
-      fontWeight: 700,
-      fontFamily: FONT_FAMILY,
-      padding: "13px 26px",
-      border: "none",
-      borderRadius: BORDER_RADIUS,
-      margin: "6px 8px 6px 0",
-      cursor: "pointer",
-      transition: "background 0.2s",
-      boxShadow: "0 2px 8px #0A5DAB22",
-      letterSpacing: 1,
-    },
-    buttonDanger: {
-      background: DANGER_COLOR,
-      color: "#fff",
-      fontSize: "21px",
-      fontWeight: 600,
-      fontFamily: FONT_FAMILY,
-      padding: "10px 18px",
-      border: "none",
-      borderRadius: BORDER_RADIUS,
-      margin: "6px 8px 6px 0",
-      cursor: "pointer",
-      transition: "background 0.2s",
-      boxShadow: "0 2px 8px #D7263D22",
-      letterSpacing: 1,
-    },
-    buttonSecondary: {
-      background: "#fff",
-      color: MAIN_COLOR,
-      fontSize: "21px",
-      fontWeight: 600,
-      fontFamily: FONT_FAMILY,
-      padding: "10px 18px",
-      border: `2px solid ${MAIN_COLOR}`,
-      borderRadius: BORDER_RADIUS,
-      margin: "6px 8px 6px 0",
-      cursor: "pointer",
-      transition: "background 0.2s, color 0.2s",
-      boxShadow: "0 2px 8px #0A5DAB11",
-      letterSpacing: 1,
-    },
-    result: {
-      background: "#fff",
-      border: `2px solid ${MAIN_COLOR}`,
-      color: MAIN_COLOR,
-      padding: "18px",
-      fontSize: "20px",
-      borderRadius: BORDER_RADIUS,
-      marginBottom: 20,
-      whiteSpace: 'pre-line',
-      boxShadow: "0 2px 12px #0A5DAB11",
-      position: "relative",
-    },
-    closeX: {
-      position: "absolute",
-      left: 10,
-      top: 10,
-      background: "transparent",
-      border: "none",
-      color: DANGER_COLOR,
-      fontWeight: 900,
-      fontSize: "22px",
-      cursor: "pointer",
-    },
-    smallLabel: {
-      color: "#888",
-      fontSize: "15px",
-      marginBottom: "2px",
-      display: "block",
-      fontWeight: 500,
-    },
-    faded: {
-      color: "#aaa",
-      fontSize: "17px",
-    }
-  };
-
-  // ---- UI Render ----
-  if (!session) {
-    return (
-      <div style={styles.container}>
-        <h2 style={styles.h2}>تسجيل الدخول</h2>
-        <label style={styles.smallLabel}>البريد الإلكتروني:</label>
-        <input style={styles.input} type="email" placeholder="Email" onChange={e => setEmail(e.target.value)} autoComplete="username" />
-        <label style={styles.smallLabel}>كلمة المرور:</label>
-        <input style={styles.input} type="password" placeholder="Password" onChange={e => setPassword(e.target.value)} autoComplete="current-password" />
-        <button style={styles.button} onClick={login}>دخول</button>
-      </div>
+function normalizeDigits(value) {
+  return String(value)
+    .replace(/[٠-٩]/g, (digit) =>
+      String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit))
+    )
+    .replace(/[۰-۹]/g, (digit) =>
+      String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit))
     );
-  }
+}
 
-  if (editMode) {
-    return (
-      <div style={styles.container}>
-        <h2 style={styles.h2}>تعديل حالة الطلب</h2>
-        <label style={styles.smallLabel}>بحث برقم الباركود:</label>
-        <div style={{display:'flex', gap: '8px'}}>
-          <input
-            style={{...styles.input, margin:'0 0 10px 0', flex:1}}
-            type="text"
-            placeholder="أدخل رقم الباركود"
-            value={searchBarcode}
-            onChange={e => setSearchBarcode(e.target.value)}
-          />
-          <button style={{...styles.button, padding:"11px 18px", fontSize:19}} onClick={handleSearchForEdit}>بحث</button>
-        </div>
-        {editData && (
-          <div style={{ marginTop: 20, background:'#f7f9fa', borderRadius:BORDER_RADIUS, padding:16, boxShadow:"0 2px 8px #0A5DAB08" }}>
-            <div><span style={styles.smallLabel}>الحالة الحالية:</span><b style={{color: MAIN_COLOR}}>{editData.status}</b></div>
-            <div><span style={styles.smallLabel}>الملاحظات الحالية:</span><b style={{color:'#555'}}>{editData.notes || '-'}</b></div>
-            <label style={styles.smallLabel}>تغيير الحالة:</label>
-            <select
-              value={statusChoice}
-              onChange={e => setStatusChoice(e.target.value)}
-              style={styles.select}
-            >
-              <option value="">-- اختر الحالة الجديدة --</option>
-              <option value="وردت الموافقة. رجاء إحضار جواز السفر والأوراق المطلوبة خلال المواعيد المحددة أو الإرسال بالبريد المسجل مع مظروف إعادة مستوفى الطوابع والعنوان">
-                1. موافقة
-              </option>
-              <option value="لم ترد الموافقة">2. لم ترد الموافقة</option>
-              <option value="مطلوب إستيفاء">3. مطلوب إستيفاء</option>
-              <option value="جارى مراجعة الطلب. رجاء التحقق لاحقاً">4. جارى مراجعة الطلب</option>
-            </select>
-            <label style={styles.smallLabel}>الملاحظات (اختياري):</label>
-            <input
-              type="text"
-              placeholder="تعديل الملاحظات"
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              style={styles.input}
-            />
-            <button style={styles.button} onClick={handleEditSubmit}>تحديث الحالة</button>
-          </div>
-        )}
-        <button style={styles.buttonSecondary} onClick={() => { setEditMode(false); setEditData(null); setSearchBarcode(''); setStatusChoice(''); setNotes(''); }}>
-          العودة للرئيسية
-        </button>
-      </div>
-    );
-  }
+function todayInBerlin() {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Berlin',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+
+  const get = (type) =>
+    parts.find((part) => part.type === type).value;
+
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
+
+function isValidDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return false;
+
+  const year = Number(value.slice(0, 4));
+  if (year < 1900 || year > 9998) return false;
+
+  const date = new Date(`${value}T00:00:00Z`);
 
   return (
-    <div style={styles.container}>
-      <h2 style={styles.h2}>متابعة معاملات التأشيرات</h2>
-      {submissionResult && (
-        <div style={styles.result}>
-          {submissionResult}
-          <button style={styles.closeX} onClick={() => setSubmissionResult('')}>✖</button>
+    !Number.isNaN(date.getTime()) &&
+    date.toISOString().slice(0, 10) === value
+  );
+}
+
+function approvalExpiry(value) {
+  if (!isValidDate(value)) return null;
+
+  const date = new Date(`${value}T00:00:00Z`);
+  const year = date.getUTCFullYear();
+  const targetMonth = date.getUTCMonth() + 3;
+
+  const lastDay = new Date(
+    Date.UTC(year, targetMonth + 1, 0)
+  ).getUTCDate();
+
+  return new Date(
+    Date.UTC(
+      year,
+      targetMonth,
+      Math.min(date.getUTCDate(), lastDay)
+    )
+  )
+    .toISOString()
+    .slice(0, 10);
+}
+
+function displayDate(value) {
+  return value ? value.split('-').reverse().join(' / ') : '—';
+}
+
+function emptyDate() {
+  return { day: '', month: '', year: '' };
+}
+
+function splitDate(value) {
+  if (!isValidDate(value)) return emptyDate();
+
+  const [year, month, day] = value.split('-');
+  return { day, month, year };
+}
+
+function joinDate(parts) {
+  if (!parts.day || !parts.month || parts.year.length !== 4) {
+    return '';
+  }
+
+  return [
+    parts.year,
+    parts.month.padStart(2, '0'),
+    parts.day.padStart(2, '0'),
+  ].join('-');
+}
+
+function ApprovalDateFields({ value, onChange, disabled }) {
+  const monthRef = useRef(null);
+  const yearRef = useRef(null);
+
+  const issuedOn = joinDate(value);
+  const expiry = approvalExpiry(issuedOn);
+  const future = isValidDate(issuedOn) && issuedOn > todayInBerlin();
+  const expired = expiry && expiry < todayInBerlin();
+
+  const changePart = (field, rawValue, maxLength, nextRef) => {
+    const cleaned = normalizeDigits(rawValue)
+      .replace(/\D/g, '')
+      .slice(0, maxLength);
+
+    onChange({ ...value, [field]: cleaned });
+
+    if (cleaned.length === maxLength && nextRef?.current) {
+      nextRef.current.focus();
+      nextRef.current.select();
+    }
+  };
+
+  const handlePaste = (event) => {
+    const text = normalizeDigits(
+      event.clipboardData.getData('text')
+    ).trim();
+
+    const match = text.match(
+      /^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/
+    );
+
+    if (!match) return;
+
+    event.preventDefault();
+
+    onChange({
+      day: match[1].padStart(2, '0'),
+      month: match[2].padStart(2, '0'),
+      year: match[3],
+    });
+  };
+
+  return (
+    <div className="approval-date-box">
+      <strong>تاريخ صدور الموافقة من الجهة المختصة</strong>
+
+      <p className="help">
+        اكتب التاريخ الموجود على الموافقة نفسها، وليس تاريخ
+        وصولها للقنصلية أو تسجيلها في النظام.
+      </p>
+
+      <div
+        className="date-fields"
+        dir="ltr"
+        onPaste={handlePaste}
+      >
+        <label>
+          <span>اليوم</span>
+          <input
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder="DD"
+            maxLength={2}
+            value={value.day}
+            disabled={disabled}
+            onChange={(event) =>
+              changePart('day', event.target.value, 2, monthRef)
+            }
+            onBlur={() => {
+              if (value.day.length === 1) {
+                onChange({
+                  ...value,
+                  day: value.day.padStart(2, '0'),
+                });
+              }
+            }}
+            aria-label="يوم صدور الموافقة"
+          />
+        </label>
+
+        <span className="date-divider">/</span>
+
+        <label>
+          <span>الشهر</span>
+          <input
+            ref={monthRef}
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder="MM"
+            maxLength={2}
+            value={value.month}
+            disabled={disabled}
+            onChange={(event) =>
+              changePart('month', event.target.value, 2, yearRef)
+            }
+            onBlur={() => {
+              if (value.month.length === 1) {
+                onChange({
+                  ...value,
+                  month: value.month.padStart(2, '0'),
+                });
+              }
+            }}
+            aria-label="شهر صدور الموافقة"
+          />
+        </label>
+
+        <span className="date-divider">/</span>
+
+        <label className="year-field">
+          <span>السنة</span>
+          <input
+            ref={yearRef}
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder="YYYY"
+            maxLength={4}
+            value={value.year}
+            disabled={disabled}
+            onChange={(event) =>
+              changePart('year', event.target.value, 4)
+            }
+            aria-label="سنة صدور الموافقة"
+          />
+        </label>
+      </div>
+
+      <p className="help">
+        مثال: 10 / 01 / 2026. يمكنك أيضًا لصق التاريخ كاملًا.
+      </p>
+
+      {issuedOn && !isValidDate(issuedOn) && (
+        <p className="error-text">
+          التاريخ غير صحيح. راجع اليوم والشهر والسنة.
+        </p>
+      )}
+
+      {future && (
+        <p className="error-text">
+          تاريخ الإصدار لا يجوز أن يكون في المستقبل.
+        </p>
+      )}
+
+      {expiry && !future && (
+        <div className={expired ? 'date-result expired' : 'date-result'}>
+          <div>
+            تاريخ الإصدار:
+            {' '}
+            <b dir="ltr">{displayDate(issuedOn)}</b>
+          </div>
+
+          <div>
+            صالحة حتى:
+            {' '}
+            <b dir="ltr">{displayDate(expiry)}</b>
+          </div>
+
+          <p>
+            {expired
+              ? 'انتهت صلاحية هذه الموافقة. تسجيلها الآن لا يمدد صلاحيتها.'
+              : 'الصلاحية 3 أشهر من تاريخ الإصدار، ولا تبدأ من تاريخ التسجيل أو الإخطار.'}
+          </p>
         </div>
       )}
-      <label style={styles.smallLabel}>أدخل الباركود (رقم أو أرقام مفصولة بفواصل - أو _):</label>
-      <textarea
-        rows="3"
-        placeholder="مثل: 1234, 2441-3666"
-        value={barcode}
-        onChange={e => setBarcode(e.target.value)}
-        style={styles.textarea}
-      />
-      <label style={styles.smallLabel}>ملاحظات:</label>
-      <input
-        type="text"
-        placeholder="ملاحظات إضافية"
-        value={notes}
-        onChange={e => setNotes(e.target.value)}
-        style={styles.input}
-      />
-      <label style={styles.smallLabel}>الحالة:</label>
-      <select
-        value={statusChoice}
-        onChange={e => setStatusChoice(e.target.value)}
-        style={styles.select}
-      >
-        <option value="">-- اختر الحالة --</option>
-        <option value="وردت الموافقة. رجاء إحضار جواز السفر والأوراق المطلوبة خلال المواعيد المحددة أو الإرسال بالبريد المسجل مع مظروف إعادة مستوفى الطوابع والعنوان">
-          1. موافقة
-        </option>
-        <option value="لم ترد الموافقة">2. لم ترد الموافقة</option>
-        <option value="مطلوب إستيفاء">3. مطلوب إستيفاء</option>
-        <option value="جارى مراجعة الطلب. رجاء التحقق لاحقاً">4. جارى مراجعة الطلب</option>
-      </select>
-      <div style={{display:'flex', flexWrap:'wrap', gap:'10px'}}>
-        <button style={styles.button} onClick={handleBarcode}>إرسال</button>
-        <button style={styles.buttonSecondary} onClick={logout}>تسجيل خروج</button>
-        <button style={styles.buttonDanger} onClick={() => setEditMode(true)}>تعديل حالة طلب</button>
-      </div>
-      <div style={{marginTop:38, textAlign:'center'}}>
-        <span style={styles.faded}>جميع الحقوق محفوظة &copy; {new Date().getFullYear()}</span>
-      </div>
-      <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet" />
     </div>
   );
 }
 
-export default App;
+function StatusFields({
+  status,
+  setStatus,
+  notes,
+  setNotes,
+  dateParts,
+  setDateParts,
+  disabled,
+  bulk,
+}) {
+  return (
+    <>
+      <label htmlFor="request-status">الحالة</label>
+
+      <select
+        id="request-status"
+        value={status}
+        disabled={disabled}
+        onChange={(event) => setStatus(event.target.value)}
+      >
+        <option value="">-- اختر الحالة --</option>
+        <option value={STATUS.APPROVED}>موافقة</option>
+        <option value={STATUS.NOT_APPROVED}>لم ترد الموافقة</option>
+        <option value={STATUS.REQUIRED}>مطلوب إستيفاء</option>
+        <option value={STATUS.REVIEW}>جارى مراجعة الطلب</option>
+      </select>
+
+      {isApproved(status) && (
+        <>
+          <ApprovalDateFields
+            value={dateParts}
+            onChange={setDateParts}
+            disabled={disabled}
+          />
+
+          {bulk && (
+            <p className="help">
+              عند تحديث أكثر من طلب، أدخل معًا الطلبات التي
+              تحمل موافقاتها نفس تاريخ الإصدار فقط.
+            </p>
+          )}
+        </>
+      )}
+
+      <label htmlFor="request-notes">الملاحظات — اختياري</label>
+
+      <textarea
+        id="request-notes"
+        rows={3}
+        value={notes}
+        disabled={disabled}
+        onChange={(event) => setNotes(event.target.value)}
+        placeholder="ملاحظات إضافية"
+      />
+    </>
+  );
+}
+
+export default function App() {
+  const [session, setSession] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const [barcode, setBarcode] = useState('');
+  const [status, setStatus] = useState('');
+  const [notes, setNotes] = useState('');
+  const [dateParts, setDateParts] = useState(emptyDate);
+
+  const [editMode, setEditMode] = useState(false);
+  const [searchBarcode, setSearchBarcode] = useState('');
+  const [editData, setEditData] = useState(null);
+
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  const busyRef = useRef(false);
+
+  useEffect(() => {
+    let active = true;
+
+    supabase.auth
+      .getSession()
+      .then(({ data, error }) => {
+        if (!active) return;
+
+        if (error) {
+          setMessage('تعذر التحقق من تسجيل الدخول.');
+        }
+
+        setSession(data?.session || null);
+        setAuthLoading(false);
+      })
+      .catch(() => {
+        if (!active) return;
+        setMessage('تعذر الاتصال. يرجى إعادة تحميل الصفحة.');
+        setAuthLoading(false);
+      });
+
+    const { data } = supabase.auth.onAuthStateChange(
+      (_event, nextSession) => {
+        if (active) setSession(nextSession);
+      }
+    );
+
+    return () => {
+      active = false;
+      data.subscription.unsubscribe();
+    };
+  }, []);
+
+  const startBusy = () => {
+    if (busyRef.current) return false;
+    busyRef.current = true;
+    setBusy(true);
+    return true;
+  };
+
+  const finishBusy = () => {
+    busyRef.current = false;
+    setBusy(false);
+  };
+
+  const resetFields = () => {
+    setStatus('');
+    setNotes('');
+    setDateParts(emptyDate());
+  };
+
+  const validateDate = () => {
+    if (!isApproved(status)) return true;
+
+    const issuedOn = joinDate(dateParts);
+
+    if (!isValidDate(issuedOn)) {
+      setMessage('يرجى إدخال تاريخ صدور الموافقة كاملًا وبصورة صحيحة.');
+      return false;
+    }
+
+    if (issuedOn > todayInBerlin()) {
+      setMessage('تاريخ صدور الموافقة لا يجوز أن يكون في المستقبل.');
+      return false;
+    }
+
+    return true;
+  };
+
+  const buildPayload = () => ({
+    status,
+    notes: notes.trim(),
+    approval_issued_on: isApproved(status)
+      ? joinDate(dateParts)
+      : null,
+  });
+
+  const login = async (event) => {
+    event.preventDefault();
+    if (!startBusy()) return;
+    setMessage('');
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (error) throw error;
+      setPassword('');
+    } catch (error) {
+      setMessage(`تعذر تسجيل الدخول: ${error.message}`);
+    } finally {
+      finishBusy();
+    }
+  };
+
+  const logout = async () => {
+    if (!startBusy()) return;
+
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+
+      setSession(null);
+      setEditMode(false);
+      setEditData(null);
+      setBarcode('');
+      setSearchBarcode('');
+      resetFields();
+      setMessage('');
+    } catch (error) {
+      setMessage(`تعذر تسجيل الخروج: ${error.message}`);
+    } finally {
+      finishBusy();
+    }
+  };
+
+  const handleBarcode = async (event) => {
+    event.preventDefault();
+    if (busyRef.current) return;
+
+    const codes = [
+      ...new Set(
+        normalizeDigits(barcode)
+          .split(/[\s,،_\-]+/)
+          .map((code) => code.trim())
+          .filter(Boolean)
+      ),
+    ];
+
+    if (!codes.length) {
+      setMessage('يرجى إدخال رقم الطلب.');
+      return;
+    }
+
+    const invalid = codes.find((code) => !/^\d{4}$/.test(code));
+
+    if (invalid) {
+      setMessage(`رقم الطلب ${invalid} يجب أن يتكون من 4 أرقام.`);
+      return;
+    }
+
+    if (!validateDate() || !startBusy()) return;
+
+    setMessage('');
+
+    const results = [];
+    let failed = false;
+
+    try {
+      for (const code of codes) {
+        try {
+          const { data, error } = await supabase
+            .from('visa_requests')
+            .select('barcode, status')
+            .eq('barcode', code)
+            .maybeSingle();
+
+          if (error) throw error;
+
+          // تسجيل الطلب الجديد أولًا كطلب قيد المراجعة.
+          if (!data) {
+            const { error: insertError } = await supabase
+              .from('visa_requests')
+              .insert({
+                barcode: code,
+                status: STATUS.REVIEW,
+                notes: notes.trim(),
+                approval_issued_on: null,
+              });
+
+            if (insertError) throw insertError;
+
+            results.push(
+              `✅ ${code}: تم تسجيل الطلب قيد المراجعة.`
+            );
+          } else if (data.status === STATUS.REVIEW) {
+            if (!status) {
+              throw new Error('اختر الحالة المطلوب تسجيلها.');
+            }
+
+            const { data: updated, error: updateError } =
+              await supabase
+                .from('visa_requests')
+                .update(buildPayload())
+                .eq('barcode', code)
+                .eq('status', STATUS.REVIEW)
+                .select('barcode');
+
+            if (updateError) throw updateError;
+
+            if (!updated?.length) {
+              throw new Error(
+                'لم يتم الحفظ. أعد البحث وتحقق من صلاحيات الحساب.'
+              );
+            }
+
+            results.push(
+              isApproved(status)
+                ? `✅ ${code}: تم تسجيل الموافقة بتاريخ إصدار ${displayDate(joinDate(dateParts))}.`
+                : `✅ ${code}: تم تحديث الحالة.`
+            );
+          } else {
+            results.push(
+              `ℹ️ ${code}: الطلب تمت معالجته. استخدم «تعديل طلب» لتغييره.`
+            );
+          }
+        } catch (error) {
+          failed = true;
+          results.push(`❌ ${code}: ${error.message || 'تعذر الحفظ.'}`);
+        }
+      }
+
+      setMessage(results.join('\n'));
+
+      if (!failed) {
+        setBarcode('');
+        resetFields();
+      }
+    } finally {
+      finishBusy();
+    }
+  };
+
+  const searchForEdit = async (event) => {
+    event.preventDefault();
+    if (busyRef.current) return;
+
+    const code = normalizeDigits(searchBarcode).trim();
+
+    if (!/^\d{4}$/.test(code)) {
+      setMessage('أدخل رقم طلب مكوّنًا من 4 أرقام.');
+      return;
+    }
+
+    if (!startBusy()) return;
+
+    setEditData(null);
+    resetFields();
+    setMessage('');
+
+    try {
+      const { data, error } = await supabase
+        .from('visa_requests')
+        .select('barcode, status, notes, approval_issued_on')
+        .eq('barcode', code)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!data) {
+        setMessage('لم يتم العثور على هذا الطلب.');
+        return;
+      }
+
+      setEditData(data);
+      setStatus(isApproved(data.status) ? STATUS.APPROVED : data.status);
+      setNotes(data.notes || '');
+      setDateParts(splitDate(data.approval_issued_on));
+    } catch (error) {
+      setMessage(`تعذر البحث: ${error.message}`);
+    } finally {
+      finishBusy();
+    }
+  };
+
+  const saveEdit = async (event) => {
+    event.preventDefault();
+
+    if (!editData || busyRef.current) return;
+
+    if (!status) {
+      setMessage('يرجى اختيار الحالة.');
+      return;
+    }
+
+    if (!validateDate() || !startBusy()) return;
+
+    setMessage('');
+
+    try {
+      const { data, error } = await supabase
+        .from('visa_requests')
+        .update(buildPayload())
+        .eq('barcode', editData.barcode)
+        .select('barcode');
+
+      if (error) throw error;
+
+      if (!data?.length) {
+        throw new Error('لم يتم الحفظ. تحقق من وجود الطلب وصلاحيات الحساب.');
+      }
+
+      setMessage(`✅ تم حفظ تعديلات الطلب ${editData.barcode}.`);
+      setEditData(null);
+      setSearchBarcode('');
+      setEditMode(false);
+      resetFields();
+    } catch (error) {
+      setMessage(`تعذر الحفظ: ${error.message}`);
+    } finally {
+      finishBusy();
+    }
+  };
+
+  const changeMode = (nextMode) => {
+    if (busyRef.current) return;
+
+    setEditMode(nextMode);
+    setEditData(null);
+    setSearchBarcode('');
+    resetFields();
+    setMessage('');
+  };
+
+  return (
+    <>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap"
+      />
+
+      <style>{`
+        .admin-page {
+          min-height: 100vh;
+          padding: 24px 12px;
+          background: #f2f7fb;
+          color: #1d2939;
+          font-family: 'Cairo', 'Segoe UI', Arial, sans-serif;
+          direction: rtl;
+        }
+
+        .admin-page * {
+          box-sizing: border-box;
+        }
+
+        .admin-card {
+          max-width: 640px;
+          margin: 16px auto;
+          padding: 28px;
+          background: white;
+          border: 1px solid #dbe5ef;
+          border-radius: 18px;
+          box-shadow: 0 8px 28px #0a5dab12;
+        }
+
+        .admin-page h1 {
+          margin: 0 0 24px;
+          color: #0a5dab;
+          font-size: 26px;
+          text-align: center;
+        }
+
+        .admin-page label {
+          display: block;
+          margin-bottom: 8px;
+          font-weight: 700;
+        }
+
+        .admin-page input,
+        .admin-page textarea,
+        .admin-page select {
+          width: 100%;
+          margin-bottom: 18px;
+          padding: 13px;
+          border: 1px solid #bdcbd9;
+          border-radius: 10px;
+          background: #fff;
+          color: #1d2939;
+          font: inherit;
+          font-size: 18px;
+        }
+
+        .admin-page textarea {
+          resize: vertical;
+        }
+
+        .admin-page input:focus,
+        .admin-page textarea:focus,
+        .admin-page select:focus {
+          outline: 3px solid #0a5dab20;
+          border-color: #0a5dab;
+        }
+
+        .admin-page button {
+          padding: 12px 20px;
+          border: 0;
+          border-radius: 10px;
+          background: #0a5dab;
+          color: white;
+          font: inherit;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .admin-page button:disabled {
+          opacity: .55;
+          cursor: wait;
+        }
+
+        .admin-page button.secondary {
+          background: #e9f1f9;
+          color: #0a5dab;
+        }
+
+        .admin-page button.danger {
+          background: #b42335;
+        }
+
+        .actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-top: 16px;
+        }
+
+        .message {
+          margin-bottom: 20px;
+          padding: 15px;
+          border: 1px solid #c8dced;
+          border-radius: 10px;
+          background: #f2f8fe;
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
+          line-height: 1.9;
+        }
+
+        .help {
+          color: #5d6d7d;
+          font-size: 14px;
+          line-height: 1.9;
+        }
+
+        .approval-date-box {
+          padding: 18px;
+          margin: 0 0 20px;
+          border: 1px solid #bdd8ef;
+          border-radius: 12px;
+          background: #f6fbff;
+        }
+
+        .date-fields {
+          display: flex;
+          align-items: flex-end;
+          justify-content: center;
+          gap: 9px;
+        }
+
+        .date-fields label {
+          flex: 1;
+          min-width: 0;
+          max-width: 100px;
+          margin: 0;
+          text-align: center;
+        }
+
+        .date-fields label.year-field {
+          max-width: 140px;
+          flex: 1.4;
+        }
+
+        .date-fields label span {
+          display: block;
+          margin-bottom: 8px;
+          font-size: 15px;
+        }
+
+        .date-fields input {
+          margin: 0;
+          padding: 12px 5px;
+          text-align: center;
+          font-size: 24px;
+          font-family: 'Segoe UI', Arial, sans-serif;
+        }
+
+        .date-divider {
+          padding-bottom: 14px;
+          color: #8190a0;
+          font-size: 24px;
+        }
+
+        .date-result {
+          padding: 13px;
+          border-radius: 9px;
+          background: #e8f6ed;
+          color: #17663a;
+          line-height: 1.9;
+        }
+
+        .date-result p {
+          margin: 5px 0 0;
+          font-size: 14px;
+        }
+
+        .date-result.expired {
+          background: #fff0e3;
+          color: #934900;
+        }
+
+        .error-text {
+          color: #b42335;
+          font-size: 14px;
+        }
+
+        .current-request {
+          margin: 20px 0;
+          padding: 15px;
+          background: #f5f7fa;
+          border-radius: 10px;
+          line-height: 1.9;
+        }
+
+        @media (max-width: 480px) {
+          .admin-card { padding: 18px; }
+          .admin-page h1 { font-size: 22px; }
+          .date-fields { gap: 5px; }
+        }
+      `}</style>
+
+      <main className="admin-page">
+        <div className="admin-card">
+          <h1>
+            {!session
+              ? 'تسجيل الدخول'
+              : editMode
+                ? 'تعديل طلب'
+                : 'متابعة معاملات التأشيرات'}
+          </h1>
+
+          {message && (
+            <div className="message" role="status" aria-live="polite">
+              {message}
+            </div>
+          )}
+
+          {authLoading ? (
+            <p>جارٍ التحميل…</p>
+          ) : !session ? (
+            <form onSubmit={login}>
+              <label htmlFor="email">البريد الإلكتروني</label>
+              <input
+                id="email"
+                type="email"
+                autoComplete="username"
+                dir="ltr"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+                disabled={busy}
+              />
+
+              <label htmlFor="password">كلمة المرور</label>
+              <input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                dir="ltr"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+                disabled={busy}
+              />
+
+              <button type="submit" disabled={busy}>
+                {busy ? 'جارٍ الدخول…' : 'دخول'}
+              </button>
+            </form>
+          ) : editMode ? (
+            <>
+              <form onSubmit={searchForEdit}>
+                <label htmlFor="search-barcode">رقم الطلب</label>
+
+                <input
+                  id="search-barcode"
+                  type="text"
+                  inputMode="numeric"
+                  value={searchBarcode}
+                  onChange={(event) =>
+                    setSearchBarcode(
+                      normalizeDigits(event.target.value)
+                        .replace(/\D/g, '')
+                        .slice(0, 4)
+                    )
+                  }
+                  placeholder="مثال: 1234"
+                  disabled={busy}
+                />
+
+                <button type="submit" disabled={busy}>
+                  بحث
+                </button>
+              </form>
+
+              {editData && (
+                <form onSubmit={saveEdit}>
+                  <div className="current-request">
+                    <b>الطلب: {editData.barcode}</b>
+                    <div>الحالة الحالية: {editData.status}</div>
+                  </div>
+
+                  <StatusFields
+                    status={status}
+                    setStatus={setStatus}
+                    notes={notes}
+                    setNotes={setNotes}
+                    dateParts={dateParts}
+                    setDateParts={setDateParts}
+                    disabled={busy}
+                    bulk={false}
+                  />
+
+                  <button type="submit" disabled={busy}>
+                    {busy ? 'جارٍ الحفظ…' : 'حفظ التعديلات'}
+                  </button>
+                </form>
+              )}
+
+              <div className="actions">
+                <button
+                  type="button"
+                  className="secondary"
+                  disabled={busy}
+                  onClick={() => changeMode(false)}
+                >
+                  العودة للرئيسية
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <form onSubmit={handleBarcode}>
+                <label htmlFor="barcodes">
+                  رقم الطلب أو أرقام الطلبات
+                </label>
+
+                <textarea
+                  id="barcodes"
+                  rows={3}
+                  value={barcode}
+                  onChange={(event) => setBarcode(event.target.value)}
+                  placeholder="1234, 2441, 3666"
+                  disabled={busy}
+                />
+
+                <p className="help">
+                  الطلب الجديد يُسجّل أولًا قيد المراجعة. لتسجيل
+                  موافقته بعد ذلك، أدخل رقمه مجددًا أو استخدم تعديل طلب.
+                </p>
+
+                <StatusFields
+                  status={status}
+                  setStatus={setStatus}
+                  notes={notes}
+                  setNotes={setNotes}
+                  dateParts={dateParts}
+                  setDateParts={setDateParts}
+                  disabled={busy}
+                  bulk
+                />
+
+                <button type="submit" disabled={busy}>
+                  {busy ? 'جارٍ الحفظ…' : 'حفظ'}
+                </button>
+              </form>
+
+              <div className="actions">
+                <button
+                  type="button"
+                  className="secondary"
+                  disabled={busy}
+                  onClick={() => changeMode(true)}
+                >
+                  تعديل طلب
+                </button>
+
+                <button
+                  type="button"
+                  className="danger"
+                  disabled={busy}
+                  onClick={logout}
+                >
+                  تسجيل الخروج
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </main>
+    </>
+  );
+}
