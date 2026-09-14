@@ -38,10 +38,15 @@ function todayInBerlin() {
 }
 
 function isValidDate(value) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return false;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) {
+    return false;
+  }
 
   const year = Number(value.slice(0, 4));
-  if (year < 1900 || year > 9998) return false;
+
+  if (year < 1900 || year > 9998) {
+    return false;
+  }
 
   const date = new Date(`${value}T00:00:00Z`);
 
@@ -52,7 +57,9 @@ function isValidDate(value) {
 }
 
 function approvalExpiry(value) {
-  if (!isValidDate(value)) return null;
+  if (!isValidDate(value)) {
+    return null;
+  }
 
   const date = new Date(`${value}T00:00:00Z`);
   const year = date.getUTCFullYear();
@@ -74,22 +81,35 @@ function approvalExpiry(value) {
 }
 
 function displayDate(value) {
-  return value ? value.split('-').reverse().join(' / ') : '—';
+  return value
+    ? value.split('-').reverse().join(' / ')
+    : '—';
 }
 
 function emptyDate() {
-  return { day: '', month: '', year: '' };
+  return {
+    day: '',
+    month: '',
+    year: '',
+  };
 }
 
 function splitDate(value) {
-  if (!isValidDate(value)) return emptyDate();
+  if (!isValidDate(value)) {
+    return emptyDate();
+  }
 
   const [year, month, day] = value.split('-');
+
   return { day, month, year };
 }
 
 function joinDate(parts) {
-  if (!parts.day || !parts.month || parts.year.length !== 4) {
+  if (
+    !parts.day ||
+    !parts.month ||
+    parts.year.length !== 4
+  ) {
     return '';
   }
 
@@ -100,23 +120,43 @@ function joinDate(parts) {
   ].join('-');
 }
 
-function ApprovalDateFields({ value, onChange, disabled }) {
+function ApprovalDateFields({
+  value,
+  onChange,
+  disabled,
+}) {
   const monthRef = useRef(null);
   const yearRef = useRef(null);
 
   const issuedOn = joinDate(value);
   const expiry = approvalExpiry(issuedOn);
-  const future = isValidDate(issuedOn) && issuedOn > todayInBerlin();
-  const expired = expiry && expiry < todayInBerlin();
 
-  const changePart = (field, rawValue, maxLength, nextRef) => {
+  const future =
+    isValidDate(issuedOn) &&
+    issuedOn > todayInBerlin();
+
+  const expired =
+    expiry && expiry < todayInBerlin();
+
+  const changePart = (
+    field,
+    rawValue,
+    maxLength,
+    nextRef
+  ) => {
     const cleaned = normalizeDigits(rawValue)
       .replace(/\D/g, '')
       .slice(0, maxLength);
 
-    onChange({ ...value, [field]: cleaned });
+    onChange({
+      ...value,
+      [field]: cleaned,
+    });
 
-    if (cleaned.length === maxLength && nextRef?.current) {
+    if (
+      cleaned.length === maxLength &&
+      nextRef?.current
+    ) {
       nextRef.current.focus();
       nextRef.current.select();
     }
@@ -131,7 +171,9 @@ function ApprovalDateFields({ value, onChange, disabled }) {
       /^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/
     );
 
-    if (!match) return;
+    if (!match) {
+      return;
+    }
 
     event.preventDefault();
 
@@ -144,11 +186,13 @@ function ApprovalDateFields({ value, onChange, disabled }) {
 
   return (
     <div className="approval-date-box">
-      <strong>تاريخ صدور الموافقة من الجهة المختصة</strong>
+      <strong>
+        تاريخ صدور الموافقة من الجهة المختصة
+      </strong>
 
       <p className="help">
-        اكتب التاريخ الموجود على الموافقة نفسها، وليس تاريخ
-        وصولها للقنصلية أو تسجيلها في النظام.
+        اكتب التاريخ الموجود على الموافقة نفسها، وليس
+        تاريخ وصولها للقنصلية أو تسجيلها في النظام.
       </p>
 
       <div
@@ -158,6 +202,7 @@ function ApprovalDateFields({ value, onChange, disabled }) {
       >
         <label>
           <span>اليوم</span>
+
           <input
             type="text"
             inputMode="numeric"
@@ -167,7 +212,12 @@ function ApprovalDateFields({ value, onChange, disabled }) {
             value={value.day}
             disabled={disabled}
             onChange={(event) =>
-              changePart('day', event.target.value, 2, monthRef)
+              changePart(
+                'day',
+                event.target.value,
+                2,
+                monthRef
+              )
             }
             onBlur={() => {
               if (value.day.length === 1) {
@@ -185,6 +235,7 @@ function ApprovalDateFields({ value, onChange, disabled }) {
 
         <label>
           <span>الشهر</span>
+
           <input
             ref={monthRef}
             type="text"
@@ -195,7 +246,12 @@ function ApprovalDateFields({ value, onChange, disabled }) {
             value={value.month}
             disabled={disabled}
             onChange={(event) =>
-              changePart('month', event.target.value, 2, yearRef)
+              changePart(
+                'month',
+                event.target.value,
+                2,
+                yearRef
+              )
             }
             onBlur={() => {
               if (value.month.length === 1) {
@@ -213,6 +269,7 @@ function ApprovalDateFields({ value, onChange, disabled }) {
 
         <label className="year-field">
           <span>السنة</span>
+
           <input
             ref={yearRef}
             type="text"
@@ -223,7 +280,11 @@ function ApprovalDateFields({ value, onChange, disabled }) {
             value={value.year}
             disabled={disabled}
             onChange={(event) =>
-              changePart('year', event.target.value, 4)
+              changePart(
+                'year',
+                event.target.value,
+                4
+              )
             }
             aria-label="سنة صدور الموافقة"
           />
@@ -231,7 +292,8 @@ function ApprovalDateFields({ value, onChange, disabled }) {
       </div>
 
       <p className="help">
-        مثال: 10 / 01 / 2026. يمكنك أيضًا لصق التاريخ كاملًا.
+        مثال: 10 / 01 / 2026. يمكنك أيضًا لصق التاريخ
+        كاملًا.
       </p>
 
       {issuedOn && !isValidDate(issuedOn) && (
@@ -247,17 +309,25 @@ function ApprovalDateFields({ value, onChange, disabled }) {
       )}
 
       {expiry && !future && (
-        <div className={expired ? 'date-result expired' : 'date-result'}>
+        <div
+          className={
+            expired
+              ? 'date-result expired'
+              : 'date-result'
+          }
+        >
           <div>
-            تاريخ الإصدار:
-            {' '}
-            <b dir="ltr">{displayDate(issuedOn)}</b>
+            تاريخ الإصدار:{' '}
+            <b dir="ltr">
+              {displayDate(issuedOn)}
+            </b>
           </div>
 
           <div>
-            صالحة حتى:
-            {' '}
-            <b dir="ltr">{displayDate(expiry)}</b>
+            صالحة حتى:{' '}
+            <b dir="ltr">
+              {displayDate(expiry)}
+            </b>
           </div>
 
           <p>
@@ -283,19 +353,37 @@ function StatusFields({
 }) {
   return (
     <>
-      <label htmlFor="request-status">الحالة</label>
+      <label htmlFor="request-status">
+        الحالة
+      </label>
 
       <select
         id="request-status"
         value={status}
         disabled={disabled}
-        onChange={(event) => setStatus(event.target.value)}
+        onChange={(event) =>
+          setStatus(event.target.value)
+        }
       >
-        <option value="">-- اختر الحالة --</option>
-        <option value={STATUS.APPROVED}>موافقة</option>
-        <option value={STATUS.NOT_APPROVED}>لم ترد الموافقة</option>
-        <option value={STATUS.REQUIRED}>مطلوب إستيفاء</option>
-        <option value={STATUS.REVIEW}>جارى مراجعة الطلب</option>
+        <option value="">
+          -- اختر الحالة --
+        </option>
+
+        <option value={STATUS.APPROVED}>
+          موافقة
+        </option>
+
+        <option value={STATUS.NOT_APPROVED}>
+          لم ترد الموافقة
+        </option>
+
+        <option value={STATUS.REQUIRED}>
+          مطلوب إستيفاء
+        </option>
+
+        <option value={STATUS.REVIEW}>
+          جارى مراجعة الطلب
+        </option>
       </select>
 
       {isApproved(status) && (
@@ -308,21 +396,26 @@ function StatusFields({
 
           {bulk && (
             <p className="help">
-              عند تحديث أكثر من طلب، أدخل معًا الطلبات التي
-              تحمل موافقاتها نفس تاريخ الإصدار فقط.
+              عند تحديث أكثر من طلب، أدخل معًا
+              الطلبات التي تحمل موافقاتها نفس تاريخ
+              الإصدار فقط.
             </p>
           )}
         </>
       )}
 
-      <label htmlFor="request-notes">الملاحظات — اختياري</label>
+      <label htmlFor="request-notes">
+        الملاحظات — اختياري
+      </label>
 
       <textarea
         id="request-notes"
         rows={3}
         value={notes}
         disabled={disabled}
-        onChange={(event) => setNotes(event.target.value)}
+        onChange={(event) =>
+          setNotes(event.target.value)
+        }
         placeholder="ملاحظات إضافية"
       />
     </>
@@ -332,13 +425,16 @@ function StatusFields({
 export default function App() {
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const [barcode, setBarcode] = useState('');
   const [status, setStatus] = useState('');
   const [notes, setNotes] = useState('');
-  const [dateParts, setDateParts] = useState(emptyDate);
+
+  const [dateParts, setDateParts] =
+    useState(emptyDate);
 
   const [editMode, setEditMode] = useState(false);
   const [searchBarcode, setSearchBarcode] = useState('');
@@ -346,6 +442,7 @@ export default function App() {
 
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+
   const busyRef = useRef(false);
 
   useEffect(() => {
@@ -354,26 +451,38 @@ export default function App() {
     supabase.auth
       .getSession()
       .then(({ data, error }) => {
-        if (!active) return;
+        if (!active) {
+          return;
+        }
 
         if (error) {
-          setMessage('تعذر التحقق من تسجيل الدخول.');
+          setMessage(
+            'تعذر التحقق من تسجيل الدخول.'
+          );
         }
 
         setSession(data?.session || null);
         setAuthLoading(false);
       })
       .catch(() => {
-        if (!active) return;
-        setMessage('تعذر الاتصال. يرجى إعادة تحميل الصفحة.');
+        if (!active) {
+          return;
+        }
+
+        setMessage(
+          'تعذر الاتصال. يرجى إعادة تحميل الصفحة.'
+        );
         setAuthLoading(false);
       });
 
-    const { data } = supabase.auth.onAuthStateChange(
-      (_event, nextSession) => {
-        if (active) setSession(nextSession);
-      }
-    );
+    const { data } =
+      supabase.auth.onAuthStateChange(
+        (_event, nextSession) => {
+          if (active) {
+            setSession(nextSession);
+          }
+        }
+      );
 
     return () => {
       active = false;
@@ -382,9 +491,13 @@ export default function App() {
   }, []);
 
   const startBusy = () => {
-    if (busyRef.current) return false;
+    if (busyRef.current) {
+      return false;
+    }
+
     busyRef.current = true;
     setBusy(true);
+
     return true;
   };
 
@@ -400,17 +513,23 @@ export default function App() {
   };
 
   const validateDate = () => {
-    if (!isApproved(status)) return true;
+    if (!isApproved(status)) {
+      return true;
+    }
 
     const issuedOn = joinDate(dateParts);
 
     if (!isValidDate(issuedOn)) {
-      setMessage('يرجى إدخال تاريخ صدور الموافقة كاملًا وبصورة صحيحة.');
+      setMessage(
+        'يرجى إدخال تاريخ صدور الموافقة كاملًا وبصورة صحيحة.'
+      );
       return false;
     }
 
     if (issuedOn > todayInBerlin()) {
-      setMessage('تاريخ صدور الموافقة لا يجوز أن يكون في المستقبل.');
+      setMessage(
+        'تاريخ صدور الموافقة لا يجوز أن يكون في المستقبل.'
+      );
       return false;
     }
 
@@ -427,30 +546,46 @@ export default function App() {
 
   const login = async (event) => {
     event.preventDefault();
-    if (!startBusy()) return;
+
+    if (!startBusy()) {
+      return;
+    }
+
     setMessage('');
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
+      const { error } =
+        await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
+
       setPassword('');
     } catch (error) {
-      setMessage(`تعذر تسجيل الدخول: ${error.message}`);
+      setMessage(
+        `تعذر تسجيل الدخول: ${error.message}`
+      );
     } finally {
       finishBusy();
     }
   };
 
   const logout = async () => {
-    if (!startBusy()) return;
+    if (!startBusy()) {
+      return;
+    }
 
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      const { error } =
+        await supabase.auth.signOut();
+
+      if (error) {
+        throw error;
+      }
 
       setSession(null);
       setEditMode(false);
@@ -460,7 +595,9 @@ export default function App() {
       resetFields();
       setMessage('');
     } catch (error) {
-      setMessage(`تعذر تسجيل الخروج: ${error.message}`);
+      setMessage(
+        `تعذر تسجيل الخروج: ${error.message}`
+      );
     } finally {
       finishBusy();
     }
@@ -468,12 +605,15 @@ export default function App() {
 
   const handleBarcode = async (event) => {
     event.preventDefault();
-    if (busyRef.current) return;
+
+    if (busyRef.current) {
+      return;
+    }
 
     const codes = [
       ...new Set(
         normalizeDigits(barcode)
-          .split(/[\s,،_\-]+/)
+          .split(/[\s,،_-]+/)
           .map((code) => code.trim())
           .filter(Boolean)
       ),
@@ -484,14 +624,20 @@ export default function App() {
       return;
     }
 
-    const invalid = codes.find((code) => !/^\d{4}$/.test(code));
+    const invalid = codes.find(
+      (code) => !/^\d{4}$/.test(code)
+    );
 
     if (invalid) {
-      setMessage(`رقم الطلب ${invalid} يجب أن يتكون من 4 أرقام.`);
+      setMessage(
+        `رقم الطلب ${invalid} يجب أن يتكون من 4 أرقام.`
+      );
       return;
     }
 
-    if (!validateDate() || !startBusy()) return;
+    if (!validateDate() || !startBusy()) {
+      return;
+    }
 
     setMessage('');
 
@@ -507,38 +653,50 @@ export default function App() {
             .eq('barcode', code)
             .maybeSingle();
 
-          if (error) throw error;
+          if (error) {
+            throw error;
+          }
 
-          // تسجيل الطلب الجديد أولًا كطلب قيد المراجعة.
           if (!data) {
-            const { error: insertError } = await supabase
-              .from('visa_requests')
-              .insert({
-                barcode: code,
-                status: STATUS.REVIEW,
-                notes: notes.trim(),
-                approval_issued_on: null,
-              });
+            const { error: insertError } =
+              await supabase
+                .from('visa_requests')
+                .insert({
+                  barcode: code,
+                  status: STATUS.REVIEW,
+                  notes: notes.trim(),
+                  approval_issued_on: null,
+                });
 
-            if (insertError) throw insertError;
+            if (insertError) {
+              throw insertError;
+            }
 
             results.push(
               `✅ ${code}: تم تسجيل الطلب قيد المراجعة.`
             );
-          } else if (data.status === STATUS.REVIEW) {
+          } else if (
+            data.status === STATUS.REVIEW
+          ) {
             if (!status) {
-              throw new Error('اختر الحالة المطلوب تسجيلها.');
+              throw new Error(
+                'اختر الحالة المطلوب تسجيلها.'
+              );
             }
 
-            const { data: updated, error: updateError } =
-              await supabase
-                .from('visa_requests')
-                .update(buildPayload())
-                .eq('barcode', code)
-                .eq('status', STATUS.REVIEW)
-                .select('barcode');
+            const {
+              data: updated,
+              error: updateError,
+            } = await supabase
+              .from('visa_requests')
+              .update(buildPayload())
+              .eq('barcode', code)
+              .eq('status', STATUS.REVIEW)
+              .select('barcode');
 
-            if (updateError) throw updateError;
+            if (updateError) {
+              throw updateError;
+            }
 
             if (!updated?.length) {
               throw new Error(
@@ -548,7 +706,9 @@ export default function App() {
 
             results.push(
               isApproved(status)
-                ? `✅ ${code}: تم تسجيل الموافقة بتاريخ إصدار ${displayDate(joinDate(dateParts))}.`
+                ? `✅ ${code}: تم تسجيل الموافقة بتاريخ إصدار ${displayDate(
+                    joinDate(dateParts)
+                  )}.`
                 : `✅ ${code}: تم تحديث الحالة.`
             );
           } else {
@@ -558,7 +718,12 @@ export default function App() {
           }
         } catch (error) {
           failed = true;
-          results.push(`❌ ${code}: ${error.message || 'تعذر الحفظ.'}`);
+
+          results.push(
+            `❌ ${code}: ${
+              error.message || 'تعذر الحفظ.'
+            }`
+          );
         }
       }
 
@@ -575,16 +740,24 @@ export default function App() {
 
   const searchForEdit = async (event) => {
     event.preventDefault();
-    if (busyRef.current) return;
 
-    const code = normalizeDigits(searchBarcode).trim();
-
-    if (!/^\d{4}$/.test(code)) {
-      setMessage('أدخل رقم طلب مكوّنًا من 4 أرقام.');
+    if (busyRef.current) {
       return;
     }
 
-    if (!startBusy()) return;
+    const code =
+      normalizeDigits(searchBarcode).trim();
+
+    if (!/^\d{4}$/.test(code)) {
+      setMessage(
+        'أدخل رقم طلب مكوّنًا من 4 أرقام.'
+      );
+      return;
+    }
+
+    if (!startBusy()) {
+      return;
+    }
 
     setEditData(null);
     resetFields();
@@ -593,23 +766,39 @@ export default function App() {
     try {
       const { data, error } = await supabase
         .from('visa_requests')
-        .select('barcode, status, notes, approval_issued_on')
+        .select(
+          'barcode, status, notes, approval_issued_on'
+        )
         .eq('barcode', code)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       if (!data) {
-        setMessage('لم يتم العثور على هذا الطلب.');
+        setMessage(
+          'لم يتم العثور على هذا الطلب.'
+        );
         return;
       }
 
       setEditData(data);
-      setStatus(isApproved(data.status) ? STATUS.APPROVED : data.status);
+
+      setStatus(
+        isApproved(data.status)
+          ? STATUS.APPROVED
+          : data.status
+      );
+
       setNotes(data.notes || '');
-      setDateParts(splitDate(data.approval_issued_on));
+      setDateParts(
+        splitDate(data.approval_issued_on)
+      );
     } catch (error) {
-      setMessage(`تعذر البحث: ${error.message}`);
+      setMessage(
+        `تعذر البحث: ${error.message}`
+      );
     } finally {
       finishBusy();
     }
@@ -618,14 +807,18 @@ export default function App() {
   const saveEdit = async (event) => {
     event.preventDefault();
 
-    if (!editData || busyRef.current) return;
+    if (!editData || busyRef.current) {
+      return;
+    }
 
     if (!status) {
       setMessage('يرجى اختيار الحالة.');
       return;
     }
 
-    if (!validateDate() || !startBusy()) return;
+    if (!validateDate() || !startBusy()) {
+      return;
+    }
 
     setMessage('');
 
@@ -636,26 +829,37 @@ export default function App() {
         .eq('barcode', editData.barcode)
         .select('barcode');
 
-      if (error) throw error;
-
-      if (!data?.length) {
-        throw new Error('لم يتم الحفظ. تحقق من وجود الطلب وصلاحيات الحساب.');
+      if (error) {
+        throw error;
       }
 
-      setMessage(`✅ تم حفظ تعديلات الطلب ${editData.barcode}.`);
+      if (!data?.length) {
+        throw new Error(
+          'لم يتم الحفظ. تحقق من وجود الطلب وصلاحيات الحساب.'
+        );
+      }
+
+      setMessage(
+        `✅ تم حفظ تعديلات الطلب ${editData.barcode}.`
+      );
+
       setEditData(null);
       setSearchBarcode('');
       setEditMode(false);
       resetFields();
     } catch (error) {
-      setMessage(`تعذر الحفظ: ${error.message}`);
+      setMessage(
+        `تعذر الحفظ: ${error.message}`
+      );
     } finally {
       finishBusy();
     }
   };
 
   const changeMode = (nextMode) => {
-    if (busyRef.current) return;
+    if (busyRef.current) {
+      return;
+    }
 
     setEditMode(nextMode);
     setEditData(null);
@@ -862,9 +1066,17 @@ export default function App() {
         }
 
         @media (max-width: 480px) {
-          .admin-card { padding: 18px; }
-          .admin-page h1 { font-size: 22px; }
-          .date-fields { gap: 5px; }
+          .admin-card {
+            padding: 18px;
+          }
+
+          .admin-page h1 {
+            font-size: 22px;
+          }
+
+          .date-fields {
+            gap: 5px;
+          }
         }
       `}</style>
 
@@ -879,7 +1091,11 @@ export default function App() {
           </h1>
 
           {message && (
-            <div className="message" role="status" aria-live="polite">
+            <div
+              className="message"
+              role="status"
+              aria-live="polite"
+            >
               {message}
             </div>
           )}
@@ -888,38 +1104,53 @@ export default function App() {
             <p>جارٍ التحميل…</p>
           ) : !session ? (
             <form onSubmit={login}>
-              <label htmlFor="email">البريد الإلكتروني</label>
+              <label htmlFor="email">
+                البريد الإلكتروني
+              </label>
+
               <input
                 id="email"
                 type="email"
                 autoComplete="username"
                 dir="ltr"
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                onChange={(event) =>
+                  setEmail(event.target.value)
+                }
                 required
                 disabled={busy}
               />
 
-              <label htmlFor="password">كلمة المرور</label>
+              <label htmlFor="password">
+                كلمة المرور
+              </label>
+
               <input
                 id="password"
                 type="password"
                 autoComplete="current-password"
                 dir="ltr"
                 value={password}
-                onChange={(event) => setPassword(event.target.value)}
+                onChange={(event) =>
+                  setPassword(event.target.value)
+                }
                 required
                 disabled={busy}
               />
 
-              <button type="submit" disabled={busy}>
+              <button
+                type="submit"
+                disabled={busy}
+              >
                 {busy ? 'جارٍ الدخول…' : 'دخول'}
               </button>
             </form>
           ) : editMode ? (
             <>
               <form onSubmit={searchForEdit}>
-                <label htmlFor="search-barcode">رقم الطلب</label>
+                <label htmlFor="search-barcode">
+                  رقم الطلب
+                </label>
 
                 <input
                   id="search-barcode"
@@ -928,7 +1159,9 @@ export default function App() {
                   value={searchBarcode}
                   onChange={(event) =>
                     setSearchBarcode(
-                      normalizeDigits(event.target.value)
+                      normalizeDigits(
+                        event.target.value
+                      )
                         .replace(/\D/g, '')
                         .slice(0, 4)
                     )
@@ -937,7 +1170,10 @@ export default function App() {
                   disabled={busy}
                 />
 
-                <button type="submit" disabled={busy}>
+                <button
+                  type="submit"
+                  disabled={busy}
+                >
                   بحث
                 </button>
               </form>
@@ -945,8 +1181,14 @@ export default function App() {
               {editData && (
                 <form onSubmit={saveEdit}>
                   <div className="current-request">
-                    <b>الطلب: {editData.barcode}</b>
-                    <div>الحالة الحالية: {editData.status}</div>
+                    <b>
+                      الطلب: {editData.barcode}
+                    </b>
+
+                    <div>
+                      الحالة الحالية:{' '}
+                      {editData.status}
+                    </div>
                   </div>
 
                   <StatusFields
@@ -960,8 +1202,13 @@ export default function App() {
                     bulk={false}
                   />
 
-                  <button type="submit" disabled={busy}>
-                    {busy ? 'جارٍ الحفظ…' : 'حفظ التعديلات'}
+                  <button
+                    type="submit"
+                    disabled={busy}
+                  >
+                    {busy
+                      ? 'جارٍ الحفظ…'
+                      : 'حفظ التعديلات'}
                   </button>
                 </form>
               )}
@@ -988,14 +1235,17 @@ export default function App() {
                   id="barcodes"
                   rows={3}
                   value={barcode}
-                  onChange={(event) => setBarcode(event.target.value)}
+                  onChange={(event) =>
+                    setBarcode(event.target.value)
+                  }
                   placeholder="1234, 2441, 3666"
                   disabled={busy}
                 />
 
                 <p className="help">
-                  الطلب الجديد يُسجّل أولًا قيد المراجعة. لتسجيل
-                  موافقته بعد ذلك، أدخل رقمه مجددًا أو استخدم تعديل طلب.
+                  الطلب الجديد يُسجّل أولًا قيد
+                  المراجعة. لتسجيل موافقته بعد ذلك،
+                  أدخل رقمه مجددًا أو استخدم تعديل طلب.
                 </p>
 
                 <StatusFields
@@ -1009,7 +1259,10 @@ export default function App() {
                   bulk
                 />
 
-                <button type="submit" disabled={busy}>
+                <button
+                  type="submit"
+                  disabled={busy}
+                >
                   {busy ? 'جارٍ الحفظ…' : 'حفظ'}
                 </button>
               </form>
