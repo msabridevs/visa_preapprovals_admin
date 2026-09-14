@@ -88,7 +88,11 @@ function displayDate(value) {
 }
 
 function emptyDate() {
-  return { day: '', month: '', year: '' };
+  return {
+    day: '',
+    month: '',
+    year: '',
+  };
 }
 
 function splitDate(value) {
@@ -97,6 +101,7 @@ function splitDate(value) {
   }
 
   const [year, month, day] = value.split('-');
+
   return { day, month, year };
 }
 
@@ -128,7 +133,8 @@ function ApprovalDateFields({
   const expiry = approvalExpiry(issuedOn);
 
   const future =
-    isValidDate(issuedOn) && issuedOn > todayInBerlin();
+    isValidDate(issuedOn) &&
+    issuedOn > todayInBerlin();
 
   const expired =
     expiry && expiry < todayInBerlin();
@@ -275,7 +281,11 @@ function ApprovalDateFields({
             value={value.year}
             disabled={disabled}
             onChange={(event) =>
-              changePart('year', event.target.value, 4)
+              changePart(
+                'year',
+                event.target.value,
+                4
+              )
             }
             aria-label="سنة صدور الموافقة"
           />
@@ -308,12 +318,16 @@ function ApprovalDateFields({
         >
           <div>
             تاريخ صدور الموافقة:{' '}
-            <b dir="ltr">{displayDate(issuedOn)}</b>
+            <b dir="ltr">
+              {displayDate(issuedOn)}
+            </b>
           </div>
 
           <div>
             تاريخ انتهاء صلاحية الموافقة:{' '}
-            <b dir="ltr">{displayDate(expiry)}</b>
+            <b dir="ltr">
+              {displayDate(expiry)}
+            </b>
           </div>
 
           <p>
@@ -345,22 +359,34 @@ function StatusFields({
 }) {
   return (
     <>
-      <label htmlFor="request-status">الحالة</label>
+      <label htmlFor="request-status">
+        الحالة
+      </label>
 
       <select
         id="request-status"
         value={status}
         disabled={disabled}
-        onChange={(event) => setStatus(event.target.value)}
+        onChange={(event) =>
+          setStatus(event.target.value)
+        }
       >
-        <option value="">-- اختر الحالة --</option>
-        <option value={STATUS.APPROVED}>موافقة</option>
+        <option value="">
+          -- اختر الحالة --
+        </option>
+
+        <option value={STATUS.APPROVED}>
+          موافقة
+        </option>
+
         <option value={STATUS.NOT_APPROVED}>
           لم ترد الموافقة
         </option>
+
         <option value={STATUS.REQUIRED}>
           مطلوب إستيفاء
         </option>
+
         <option value={STATUS.REVIEW}>
           جارى مراجعة الطلب
         </option>
@@ -392,7 +418,9 @@ function StatusFields({
         rows={3}
         value={notes}
         disabled={disabled}
-        onChange={(event) => setNotes(event.target.value)}
+        onChange={(event) =>
+          setNotes(event.target.value)
+        }
         placeholder="ملاحظات إضافية"
       />
     </>
@@ -409,7 +437,9 @@ export default function App() {
   const [barcode, setBarcode] = useState('');
   const [status, setStatus] = useState('');
   const [notes, setNotes] = useState('');
-  const [dateParts, setDateParts] = useState(emptyDate);
+
+  const [dateParts, setDateParts] =
+    useState(emptyDate);
 
   const [editMode, setEditMode] = useState(false);
   const [searchBarcode, setSearchBarcode] = useState('');
@@ -429,7 +459,9 @@ export default function App() {
         if (!active) return;
 
         if (error) {
-          setMessage('تعذر التحقق من تسجيل الدخول.');
+          setMessage(
+            'تعذر التحقق من تسجيل الدخول.'
+          );
         }
 
         setSession(data?.session || null);
@@ -464,6 +496,7 @@ export default function App() {
 
     busyRef.current = true;
     setBusy(true);
+
     return true;
   };
 
@@ -479,7 +512,9 @@ export default function App() {
   };
 
   const validateDate = () => {
-    if (!isApproved(status)) return true;
+    if (!isApproved(status)) {
+      return true;
+    }
 
     const issuedOn = joinDate(dateParts);
 
@@ -510,6 +545,7 @@ export default function App() {
 
   const login = async (event) => {
     event.preventDefault();
+
     if (!startBusy()) return;
 
     setMessage('');
@@ -522,9 +558,12 @@ export default function App() {
         });
 
       if (error) throw error;
+
       setPassword('');
     } catch (error) {
-      setMessage(`تعذر تسجيل الدخول: ${error.message}`);
+      setMessage(
+        `تعذر تسجيل الدخول: ${error.message}`
+      );
     } finally {
       finishBusy();
     }
@@ -534,7 +573,9 @@ export default function App() {
     if (!startBusy()) return;
 
     try {
-      const { error } = await supabase.auth.signOut();
+      const { error } =
+        await supabase.auth.signOut();
+
       if (error) throw error;
 
       setSession(null);
@@ -545,7 +586,9 @@ export default function App() {
       resetFields();
       setMessage('');
     } catch (error) {
-      setMessage(`تعذر تسجيل الخروج: ${error.message}`);
+      setMessage(
+        `تعذر تسجيل الخروج: ${error.message}`
+      );
     } finally {
       finishBusy();
     }
@@ -553,6 +596,7 @@ export default function App() {
 
   const handleBarcode = async (event) => {
     event.preventDefault();
+
     if (busyRef.current) return;
 
     const codes = [
@@ -580,25 +624,66 @@ export default function App() {
       return;
     }
 
-    if (!validateDate() || !startBusy()) return;
+    if (!Object.values(STATUS).includes(status)) {
+      setMessage(
+        'يرجى اختيار الحالة. عند تسجيل طلب لأول مرة يجب اختيار «جارى مراجعة الطلب» أولًا.'
+      );
+      return;
+    }
+
+    if (!startBusy()) return;
 
     setMessage('');
 
-    const results = [];
-    let failed = false;
-
     try {
+      // فحص جميع الأرقام قبل إجراء أي حفظ.
+      const requests = [];
+
       for (const code of codes) {
+        const { data, error } = await supabase
+          .from('visa_requests')
+          .select('barcode, status')
+          .eq('barcode', code)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        requests.push({ code, data });
+      }
+
+      const unregistered = requests
+        .filter((request) => !request.data)
+        .map((request) => request.code);
+
+      // منع تسجيل أي رقم جديد بحالة غير قيد المراجعة.
+      if (
+        unregistered.length &&
+        status !== STATUS.REVIEW
+      ) {
+        setMessage(
+          `⚠️ الأرقام التالية لم يسبق تسجيلها: ${unregistered.join('، ')}.\n` +
+          'لم يتم حفظ أو تغيير أي طلب في هذه العملية.\n' +
+          'سجّل هذه الأرقام أولًا باختيار «جارى مراجعة الطلب» ثم اضغط حفظ. بعد نجاح التسجيل يمكنك تغيير الحالة إلى موافقة أو رفض أو أي حالة أخرى.'
+        );
+        return;
+      }
+
+      // يأتي فحص تاريخ الموافقة بعد التأكد من تسجيل الطلبات.
+      if (!validateDate()) return;
+
+      const results = [];
+      const pendingCodes = [];
+
+      for (const { code, data } of requests) {
         try {
-          const { data, error } = await supabase
-            .from('visa_requests')
-            .select('barcode, status')
-            .eq('barcode', code)
-            .maybeSingle();
-
-          if (error) throw error;
-
           if (!data) {
+            // مسار الإنشاء الوحيد: اختيار قيد المراجعة صراحةً.
+            if (status !== STATUS.REVIEW) {
+              throw new Error(
+                'يجب تسجيل الطلب أولًا بحالة «جارى مراجعة الطلب».'
+              );
+            }
+
             const { error: insertError } =
               await supabase
                 .from('visa_requests')
@@ -612,15 +697,11 @@ export default function App() {
             if (insertError) throw insertError;
 
             results.push(
-              `✅ ${code}: تم تسجيل الطلب قيد المراجعة.`
+              `✅ ${code}: تم تسجيل الطلب لأول مرة بحالة «جارى مراجعة الطلب».`
             );
-          } else if (data.status === STATUS.REVIEW) {
-            if (!status) {
-              throw new Error(
-                'اختر الحالة المطلوب تسجيلها.'
-              );
-            }
-
+          } else if (
+            data.status === STATUS.REVIEW
+          ) {
             const {
               data: updated,
               error: updateError,
@@ -635,7 +716,7 @@ export default function App() {
 
             if (!updated?.length) {
               throw new Error(
-                'لم يتم الحفظ. أعد البحث وتحقق من صلاحيات الحساب.'
+                'لم يتم التحديث. ربما تغيرت حالة الطلب أو تم حذفه. أعد البحث وتحقق من صلاحيات الحساب.'
               );
             }
 
@@ -644,15 +725,17 @@ export default function App() {
                 ? `✅ ${code}: تم تسجيل الموافقة. تاريخ صدور الموافقة: ${displayDate(
                     joinDate(dateParts)
                   )}.`
-                : `✅ ${code}: تم تحديث الحالة.`
+                : `✅ ${code}: تم حفظ الحالة والملاحظات.`
             );
           } else {
+            pendingCodes.push(code);
+
             results.push(
-              `ℹ️ ${code}: خطأ.الطلب سبق معالجته. استخدم «تعديل طلب» لتغييره.`
+              `⚠️ ${code}: الطلب سبق معالجته. لم يتم تغييره؛ استخدم «تعديل طلب».`
             );
           }
         } catch (error) {
-          failed = true;
+          pendingCodes.push(code);
 
           results.push(
             `❌ ${code}: ${error.message || 'تعذر الحفظ.'}`
@@ -662,10 +745,18 @@ export default function App() {
 
       setMessage(results.join('\n'));
 
-      if (!failed) {
-        setBarcode('');
+      // إبقاء الأرقام التي لم يتم حفظها فقط.
+      setBarcode(pendingCodes.join(', '));
+
+      if (!pendingCodes.length) {
         resetFields();
       }
+    } catch (error) {
+      setMessage(
+        `تعذر فحص الطلبات. لم يتم حفظ أي تغييرات: ${
+          error.message || 'خطأ في الاتصال.'
+        }`
+      );
     } finally {
       finishBusy();
     }
@@ -673,12 +764,16 @@ export default function App() {
 
   const searchForEdit = async (event) => {
     event.preventDefault();
+
     if (busyRef.current) return;
 
-    const code = normalizeDigits(searchBarcode).trim();
+    const code =
+      normalizeDigits(searchBarcode).trim();
 
     if (!/^\d{4}$/.test(code)) {
-      setMessage('أدخل رقم طلب مكوّنًا من 4 أرقام.');
+      setMessage(
+        'أدخل رقم طلب مكوّنًا من 4 أرقام.'
+      );
       return;
     }
 
@@ -700,20 +795,28 @@ export default function App() {
       if (error) throw error;
 
       if (!data) {
-        setMessage('لم يتم العثور على هذا الطلب.');
+        setMessage(
+          'هذا الطلب غير مسجّل. لا يمكن تعديل حالته. ارجع للرئيسية وسجّله أولًا باختيار «جارى مراجعة الطلب» ثم اضغط حفظ.'
+        );
         return;
       }
 
       setEditData(data);
+
       setStatus(
         isApproved(data.status)
           ? STATUS.APPROVED
           : data.status
       );
+
       setNotes(data.notes || '');
-      setDateParts(splitDate(data.approval_issued_on));
+      setDateParts(
+        splitDate(data.approval_issued_on)
+      );
     } catch (error) {
-      setMessage(`تعذر البحث: ${error.message}`);
+      setMessage(
+        `تعذر البحث: ${error.message}`
+      );
     } finally {
       finishBusy();
     }
@@ -721,29 +824,73 @@ export default function App() {
 
   const saveEdit = async (event) => {
     event.preventDefault();
-    if (!editData || busyRef.current) return;
 
-    if (!status) {
-      setMessage('يرجى اختيار الحالة.');
+    if (busyRef.current) return;
+
+    if (!editData?.barcode) {
+      setMessage(
+        'لا يمكن تعديل طلب غير مسجّل. ابحث عن الطلب أولًا، أو سجّله من الرئيسية بحالة «جارى مراجعة الطلب».'
+      );
       return;
     }
 
-    if (!validateDate() || !startBusy()) return;
+    if (!Object.values(STATUS).includes(status)) {
+      setMessage(
+        'يرجى اختيار حالة صحيحة من القائمة.'
+      );
+      return;
+    }
+
+    if (!startBusy()) return;
 
     setMessage('');
 
     try {
+      // إعادة التأكد من وجود الطلب قبل التحديث.
+      // لا يتم إنشاء طلب تلقائيًا من شاشة التعديل.
+      const {
+        data: current,
+        error: readError,
+      } = await supabase
+        .from('visa_requests')
+        .select('barcode, status')
+        .eq('barcode', editData.barcode)
+        .maybeSingle();
+
+      if (readError) throw readError;
+
+      if (!current) {
+        setEditData(null);
+
+        setMessage(
+          'الطلب غير موجود حاليًا، ولم يتم حفظ أي تعديل. ارجع للرئيسية وسجّله أولًا بحالة «جارى مراجعة الطلب».'
+        );
+        return;
+      }
+
+      if (current.status !== editData.status) {
+        setEditData(null);
+
+        setMessage(
+          'تغيرت حالة الطلب منذ البحث. أعد البحث لمراجعة الحالة الحالية قبل الحفظ.'
+        );
+        return;
+      }
+
+      if (!validateDate()) return;
+
       const { data, error } = await supabase
         .from('visa_requests')
         .update(buildPayload())
         .eq('barcode', editData.barcode)
+        .eq('status', current.status)
         .select('barcode');
 
       if (error) throw error;
 
       if (!data?.length) {
         throw new Error(
-          'لم يتم الحفظ. تحقق من وجود الطلب وصلاحيات الحساب.'
+          'لم يتم الحفظ. ربما تغيرت حالة الطلب أو تم حذفه. أعد البحث وتحقق من صلاحيات الحساب.'
         );
       }
 
@@ -756,7 +903,11 @@ export default function App() {
       setEditMode(false);
       resetFields();
     } catch (error) {
-      setMessage(`تعذر الحفظ: ${error.message}`);
+      setMessage(
+        `تعذر الحفظ: ${
+          error.message || 'خطأ في الاتصال.'
+        }`
+      );
     } finally {
       finishBusy();
     }
@@ -970,9 +1121,17 @@ export default function App() {
         }
 
         @media (max-width: 480px) {
-          .admin-card { padding: 18px; }
-          .admin-page h1 { font-size: 22px; }
-          .date-fields { gap: 5px; }
+          .admin-card {
+            padding: 18px;
+          }
+
+          .admin-page h1 {
+            font-size: 22px;
+          }
+
+          .date-fields {
+            gap: 5px;
+          }
         }
       `}</style>
 
@@ -1034,7 +1193,10 @@ export default function App() {
                 disabled={busy}
               />
 
-              <button type="submit" disabled={busy}>
+              <button
+                type="submit"
+                disabled={busy}
+              >
                 {busy ? 'جارٍ الدخول…' : 'دخول'}
               </button>
             </form>
@@ -1061,7 +1223,10 @@ export default function App() {
                   disabled={busy}
                 />
 
-                <button type="submit" disabled={busy}>
+                <button
+                  type="submit"
+                  disabled={busy}
+                >
                   بحث
                 </button>
               </form>
@@ -1069,7 +1234,10 @@ export default function App() {
               {editData && (
                 <form onSubmit={saveEdit}>
                   <div className="current-request">
-                    <b>الطلب: {editData.barcode}</b>
+                    <b>
+                      الطلب: {editData.barcode}
+                    </b>
+
                     <div>
                       الحالة الحالية: {editData.status}
                     </div>
@@ -1086,8 +1254,13 @@ export default function App() {
                     bulk={false}
                   />
 
-                  <button type="submit" disabled={busy}>
-                    {busy ? 'جارٍ الحفظ…' : 'حفظ التعديلات'}
+                  <button
+                    type="submit"
+                    disabled={busy}
+                  >
+                    {busy
+                      ? 'جارٍ الحفظ…'
+                      : 'حفظ التعديلات'}
                   </button>
                 </form>
               )}
@@ -1122,9 +1295,10 @@ export default function App() {
                 />
 
                 <p className="help">
-                  الطلب الجديد يُسجّل أولًا قيد المراجعة.
-                  لتسجيل موافقته بعد ذلك، أدخل رقمه مجددًا
-                  أو استخدم تعديل طلب.
+                  لتسجيل طلب جديد، اختر «جارى مراجعة الطلب»
+                  واضغط حفظ أولًا. بعد نجاح التسجيل يمكنك
+                  تغيير حالته. اختيار أي حالة أخرى لرقم غير
+                  مسجّل سيوقف العملية ويظهر تحذيرًا دون حفظ.
                 </p>
 
                 <StatusFields
@@ -1138,7 +1312,10 @@ export default function App() {
                   bulk
                 />
 
-                <button type="submit" disabled={busy}>
+                <button
+                  type="submit"
+                  disabled={busy}
+                >
                   {busy ? 'جارٍ الحفظ…' : 'حفظ'}
                 </button>
               </form>
