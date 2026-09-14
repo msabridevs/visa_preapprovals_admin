@@ -56,6 +56,7 @@ function isValidDate(value) {
   );
 }
 
+// ثلاثة أشهر تقويمية من تاريخ صدور الموافقة.
 function approvalExpiry(value) {
   if (!isValidDate(value)) {
     return null;
@@ -87,11 +88,7 @@ function displayDate(value) {
 }
 
 function emptyDate() {
-  return {
-    day: '',
-    month: '',
-    year: '',
-  };
+  return { day: '', month: '', year: '' };
 }
 
 function splitDate(value) {
@@ -100,7 +97,6 @@ function splitDate(value) {
   }
 
   const [year, month, day] = value.split('-');
-
   return { day, month, year };
 }
 
@@ -132,8 +128,7 @@ function ApprovalDateFields({
   const expiry = approvalExpiry(issuedOn);
 
   const future =
-    isValidDate(issuedOn) &&
-    issuedOn > todayInBerlin();
+    isValidDate(issuedOn) && issuedOn > todayInBerlin();
 
   const expired =
     expiry && expiry < todayInBerlin();
@@ -191,8 +186,8 @@ function ApprovalDateFields({
       </strong>
 
       <p className="help">
-        اكتب التاريخ الموجود على الموافقة نفسها، وليس
-        تاريخ وصولها للقنصلية أو تسجيلها في النظام.
+        أدخل تاريخ صدور الموافقة المدون على الموافقة نفسها،
+        وليس تاريخ ورودها إلى البعثة أو تاريخ تسجيلها في النظام.
       </p>
 
       <div
@@ -280,11 +275,7 @@ function ApprovalDateFields({
             value={value.year}
             disabled={disabled}
             onChange={(event) =>
-              changePart(
-                'year',
-                event.target.value,
-                4
-              )
+              changePart('year', event.target.value, 4)
             }
             aria-label="سنة صدور الموافقة"
           />
@@ -292,8 +283,7 @@ function ApprovalDateFields({
       </div>
 
       <p className="help">
-        مثال: 10 / 01 / 2026. يمكنك أيضًا لصق التاريخ
-        كاملًا.
+        مثال: 10 / 01 / 2026. يمكنك أيضًا لصق التاريخ كاملًا.
       </p>
 
       {issuedOn && !isValidDate(issuedOn) && (
@@ -304,7 +294,7 @@ function ApprovalDateFields({
 
       {future && (
         <p className="error-text">
-          تاريخ الإصدار لا يجوز أن يكون في المستقبل.
+          تاريخ صدور الموافقة لا يجوز أن يكون في المستقبل.
         </p>
       )}
 
@@ -317,24 +307,30 @@ function ApprovalDateFields({
           }
         >
           <div>
-            تاريخ الإصدار:{' '}
-            <b dir="ltr">
-              {displayDate(issuedOn)}
-            </b>
+            تاريخ صدور الموافقة:{' '}
+            <b dir="ltr">{displayDate(issuedOn)}</b>
           </div>
 
           <div>
-            صالحة حتى:{' '}
-            <b dir="ltr">
-              {displayDate(expiry)}
-            </b>
+            تاريخ انتهاء صلاحية الموافقة:{' '}
+            <b dir="ltr">{displayDate(expiry)}</b>
           </div>
 
           <p>
-            {expired
-              ? 'انتهت صلاحية هذه الموافقة. تسجيلها الآن لا يمدد صلاحيتها.'
-              : 'الصلاحية 3 أشهر من تاريخ الإصدار، ولا تبدأ من تاريخ التسجيل أو الإخطار.'}
+            صلاحية الموافقة 3 أشهر من تاريخ صدور الموافقة.
+            ولا تُحسب من تاريخ ورودها إلى البعثة أو تسجيلها
+            في النظام أو الإخطار بها.
           </p>
+
+          {expired && (
+            <p>
+              <strong>
+                انتهت صلاحية هذه الموافقة.
+              </strong>
+              {' '}
+              تسجيلها الآن لا يمدد صلاحيتها.
+            </p>
+          )}
         </div>
       )}
     </div>
@@ -353,34 +349,22 @@ function StatusFields({
 }) {
   return (
     <>
-      <label htmlFor="request-status">
-        الحالة
-      </label>
+      <label htmlFor="request-status">الحالة</label>
 
       <select
         id="request-status"
         value={status}
         disabled={disabled}
-        onChange={(event) =>
-          setStatus(event.target.value)
-        }
+        onChange={(event) => setStatus(event.target.value)}
       >
-        <option value="">
-          -- اختر الحالة --
-        </option>
-
-        <option value={STATUS.APPROVED}>
-          موافقة
-        </option>
-
+        <option value="">-- اختر الحالة --</option>
+        <option value={STATUS.APPROVED}>موافقة</option>
         <option value={STATUS.NOT_APPROVED}>
           لم ترد الموافقة
         </option>
-
         <option value={STATUS.REQUIRED}>
           مطلوب إستيفاء
         </option>
-
         <option value={STATUS.REVIEW}>
           جارى مراجعة الطلب
         </option>
@@ -396,9 +380,8 @@ function StatusFields({
 
           {bulk && (
             <p className="help">
-              عند تحديث أكثر من طلب، أدخل معًا
-              الطلبات التي تحمل موافقاتها نفس تاريخ
-              الإصدار فقط.
+              عند تحديث أكثر من طلب، أدخل معًا الطلبات
+              التي تحمل موافقاتها نفس تاريخ صدور الموافقة فقط.
             </p>
           )}
         </>
@@ -413,9 +396,7 @@ function StatusFields({
         rows={3}
         value={notes}
         disabled={disabled}
-        onChange={(event) =>
-          setNotes(event.target.value)
-        }
+        onChange={(event) => setNotes(event.target.value)}
         placeholder="ملاحظات إضافية"
       />
     </>
@@ -432,9 +413,7 @@ export default function App() {
   const [barcode, setBarcode] = useState('');
   const [status, setStatus] = useState('');
   const [notes, setNotes] = useState('');
-
-  const [dateParts, setDateParts] =
-    useState(emptyDate);
+  const [dateParts, setDateParts] = useState(emptyDate);
 
   const [editMode, setEditMode] = useState(false);
   const [searchBarcode, setSearchBarcode] = useState('');
@@ -451,23 +430,17 @@ export default function App() {
     supabase.auth
       .getSession()
       .then(({ data, error }) => {
-        if (!active) {
-          return;
-        }
+        if (!active) return;
 
         if (error) {
-          setMessage(
-            'تعذر التحقق من تسجيل الدخول.'
-          );
+          setMessage('تعذر التحقق من تسجيل الدخول.');
         }
 
         setSession(data?.session || null);
         setAuthLoading(false);
       })
       .catch(() => {
-        if (!active) {
-          return;
-        }
+        if (!active) return;
 
         setMessage(
           'تعذر الاتصال. يرجى إعادة تحميل الصفحة.'
@@ -491,13 +464,10 @@ export default function App() {
   }, []);
 
   const startBusy = () => {
-    if (busyRef.current) {
-      return false;
-    }
+    if (busyRef.current) return false;
 
     busyRef.current = true;
     setBusy(true);
-
     return true;
   };
 
@@ -513,9 +483,7 @@ export default function App() {
   };
 
   const validateDate = () => {
-    if (!isApproved(status)) {
-      return true;
-    }
+    if (!isApproved(status)) return true;
 
     const issuedOn = joinDate(dateParts);
 
@@ -546,10 +514,7 @@ export default function App() {
 
   const login = async (event) => {
     event.preventDefault();
-
-    if (!startBusy()) {
-      return;
-    }
+    if (!startBusy()) return;
 
     setMessage('');
 
@@ -560,32 +525,21 @@ export default function App() {
           password,
         });
 
-      if (error) {
-        throw error;
-      }
-
+      if (error) throw error;
       setPassword('');
     } catch (error) {
-      setMessage(
-        `تعذر تسجيل الدخول: ${error.message}`
-      );
+      setMessage(`تعذر تسجيل الدخول: ${error.message}`);
     } finally {
       finishBusy();
     }
   };
 
   const logout = async () => {
-    if (!startBusy()) {
-      return;
-    }
+    if (!startBusy()) return;
 
     try {
-      const { error } =
-        await supabase.auth.signOut();
-
-      if (error) {
-        throw error;
-      }
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
 
       setSession(null);
       setEditMode(false);
@@ -595,9 +549,7 @@ export default function App() {
       resetFields();
       setMessage('');
     } catch (error) {
-      setMessage(
-        `تعذر تسجيل الخروج: ${error.message}`
-      );
+      setMessage(`تعذر تسجيل الخروج: ${error.message}`);
     } finally {
       finishBusy();
     }
@@ -605,10 +557,7 @@ export default function App() {
 
   const handleBarcode = async (event) => {
     event.preventDefault();
-
-    if (busyRef.current) {
-      return;
-    }
+    if (busyRef.current) return;
 
     const codes = [
       ...new Set(
@@ -635,9 +584,7 @@ export default function App() {
       return;
     }
 
-    if (!validateDate() || !startBusy()) {
-      return;
-    }
+    if (!validateDate() || !startBusy()) return;
 
     setMessage('');
 
@@ -653,9 +600,7 @@ export default function App() {
             .eq('barcode', code)
             .maybeSingle();
 
-          if (error) {
-            throw error;
-          }
+          if (error) throw error;
 
           if (!data) {
             const { error: insertError } =
@@ -668,16 +613,12 @@ export default function App() {
                   approval_issued_on: null,
                 });
 
-            if (insertError) {
-              throw insertError;
-            }
+            if (insertError) throw insertError;
 
             results.push(
               `✅ ${code}: تم تسجيل الطلب قيد المراجعة.`
             );
-          } else if (
-            data.status === STATUS.REVIEW
-          ) {
+          } else if (data.status === STATUS.REVIEW) {
             if (!status) {
               throw new Error(
                 'اختر الحالة المطلوب تسجيلها.'
@@ -694,9 +635,7 @@ export default function App() {
               .eq('status', STATUS.REVIEW)
               .select('barcode');
 
-            if (updateError) {
-              throw updateError;
-            }
+            if (updateError) throw updateError;
 
             if (!updated?.length) {
               throw new Error(
@@ -706,7 +645,7 @@ export default function App() {
 
             results.push(
               isApproved(status)
-                ? `✅ ${code}: تم تسجيل الموافقة بتاريخ إصدار ${displayDate(
+                ? `✅ ${code}: تم تسجيل الموافقة. تاريخ صدور الموافقة: ${displayDate(
                     joinDate(dateParts)
                   )}.`
                 : `✅ ${code}: تم تحديث الحالة.`
@@ -720,9 +659,7 @@ export default function App() {
           failed = true;
 
           results.push(
-            `❌ ${code}: ${
-              error.message || 'تعذر الحفظ.'
-            }`
+            `❌ ${code}: ${error.message || 'تعذر الحفظ.'}`
           );
         }
       }
@@ -740,24 +677,16 @@ export default function App() {
 
   const searchForEdit = async (event) => {
     event.preventDefault();
+    if (busyRef.current) return;
 
-    if (busyRef.current) {
-      return;
-    }
-
-    const code =
-      normalizeDigits(searchBarcode).trim();
+    const code = normalizeDigits(searchBarcode).trim();
 
     if (!/^\d{4}$/.test(code)) {
-      setMessage(
-        'أدخل رقم طلب مكوّنًا من 4 أرقام.'
-      );
+      setMessage('أدخل رقم طلب مكوّنًا من 4 أرقام.');
       return;
     }
 
-    if (!startBusy()) {
-      return;
-    }
+    if (!startBusy()) return;
 
     setEditData(null);
     resetFields();
@@ -772,33 +701,23 @@ export default function App() {
         .eq('barcode', code)
         .maybeSingle();
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       if (!data) {
-        setMessage(
-          'لم يتم العثور على هذا الطلب.'
-        );
+        setMessage('لم يتم العثور على هذا الطلب.');
         return;
       }
 
       setEditData(data);
-
       setStatus(
         isApproved(data.status)
           ? STATUS.APPROVED
           : data.status
       );
-
       setNotes(data.notes || '');
-      setDateParts(
-        splitDate(data.approval_issued_on)
-      );
+      setDateParts(splitDate(data.approval_issued_on));
     } catch (error) {
-      setMessage(
-        `تعذر البحث: ${error.message}`
-      );
+      setMessage(`تعذر البحث: ${error.message}`);
     } finally {
       finishBusy();
     }
@@ -806,19 +725,14 @@ export default function App() {
 
   const saveEdit = async (event) => {
     event.preventDefault();
-
-    if (!editData || busyRef.current) {
-      return;
-    }
+    if (!editData || busyRef.current) return;
 
     if (!status) {
       setMessage('يرجى اختيار الحالة.');
       return;
     }
 
-    if (!validateDate() || !startBusy()) {
-      return;
-    }
+    if (!validateDate() || !startBusy()) return;
 
     setMessage('');
 
@@ -829,9 +743,7 @@ export default function App() {
         .eq('barcode', editData.barcode)
         .select('barcode');
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       if (!data?.length) {
         throw new Error(
@@ -848,18 +760,14 @@ export default function App() {
       setEditMode(false);
       resetFields();
     } catch (error) {
-      setMessage(
-        `تعذر الحفظ: ${error.message}`
-      );
+      setMessage(`تعذر الحفظ: ${error.message}`);
     } finally {
       finishBusy();
     }
   };
 
   const changeMode = (nextMode) => {
-    if (busyRef.current) {
-      return;
-    }
+    if (busyRef.current) return;
 
     setEditMode(nextMode);
     setEditData(null);
@@ -1066,17 +974,9 @@ export default function App() {
         }
 
         @media (max-width: 480px) {
-          .admin-card {
-            padding: 18px;
-          }
-
-          .admin-page h1 {
-            font-size: 22px;
-          }
-
-          .date-fields {
-            gap: 5px;
-          }
+          .admin-card { padding: 18px; }
+          .admin-page h1 { font-size: 22px; }
+          .date-fields { gap: 5px; }
         }
       `}</style>
 
@@ -1138,10 +1038,7 @@ export default function App() {
                 disabled={busy}
               />
 
-              <button
-                type="submit"
-                disabled={busy}
-              >
+              <button type="submit" disabled={busy}>
                 {busy ? 'جارٍ الدخول…' : 'دخول'}
               </button>
             </form>
@@ -1159,9 +1056,7 @@ export default function App() {
                   value={searchBarcode}
                   onChange={(event) =>
                     setSearchBarcode(
-                      normalizeDigits(
-                        event.target.value
-                      )
+                      normalizeDigits(event.target.value)
                         .replace(/\D/g, '')
                         .slice(0, 4)
                     )
@@ -1170,10 +1065,7 @@ export default function App() {
                   disabled={busy}
                 />
 
-                <button
-                  type="submit"
-                  disabled={busy}
-                >
+                <button type="submit" disabled={busy}>
                   بحث
                 </button>
               </form>
@@ -1181,13 +1073,9 @@ export default function App() {
               {editData && (
                 <form onSubmit={saveEdit}>
                   <div className="current-request">
-                    <b>
-                      الطلب: {editData.barcode}
-                    </b>
-
+                    <b>الطلب: {editData.barcode}</b>
                     <div>
-                      الحالة الحالية:{' '}
-                      {editData.status}
+                      الحالة الحالية: {editData.status}
                     </div>
                   </div>
 
@@ -1202,13 +1090,8 @@ export default function App() {
                     bulk={false}
                   />
 
-                  <button
-                    type="submit"
-                    disabled={busy}
-                  >
-                    {busy
-                      ? 'جارٍ الحفظ…'
-                      : 'حفظ التعديلات'}
+                  <button type="submit" disabled={busy}>
+                    {busy ? 'جارٍ الحفظ…' : 'حفظ التعديلات'}
                   </button>
                 </form>
               )}
@@ -1243,9 +1126,9 @@ export default function App() {
                 />
 
                 <p className="help">
-                  الطلب الجديد يُسجّل أولًا قيد
-                  المراجعة. لتسجيل موافقته بعد ذلك،
-                  أدخل رقمه مجددًا أو استخدم تعديل طلب.
+                  الطلب الجديد يُسجّل أولًا قيد المراجعة.
+                  لتسجيل موافقته بعد ذلك، أدخل رقمه مجددًا
+                  أو استخدم تعديل طلب.
                 </p>
 
                 <StatusFields
@@ -1259,10 +1142,7 @@ export default function App() {
                   bulk
                 />
 
-                <button
-                  type="submit"
-                  disabled={busy}
-                >
+                <button type="submit" disabled={busy}>
                   {busy ? 'جارٍ الحفظ…' : 'حفظ'}
                 </button>
               </form>
